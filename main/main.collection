@@ -1,0 +1,656 @@
+name: "example"
+instances {
+  id: "checkpoint_1"
+  prototype: "/operator/checkpoint/checkpoint.go"
+  position {
+    x: -17.0
+    y: 1.0
+    z: -13.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: -0.25881904
+    w: 0.9659258
+  }
+  component_properties {
+    id: "checkpoint"
+    properties {
+      id: "speed"
+      value: "3.0"
+      type: PROPERTY_TYPE_NUMBER
+    }
+  }
+  scale3 {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+  }
+}
+instances {
+  id: "checkpoint_2"
+  prototype: "/operator/checkpoint/checkpoint.go"
+  position {
+    x: -14.0
+    y: 1.0
+    z: -15.0
+  }
+  rotation {
+    x: 0.0
+    y: -0.70710677
+    z: 0.0
+    w: 0.70710677
+  }
+  component_properties {
+    id: "checkpoint"
+    properties {
+      id: "speed"
+      value: "1.0"
+      type: PROPERTY_TYPE_NUMBER
+    }
+  }
+  scale3 {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+  }
+}
+instances {
+  id: "checkpoint_3"
+  prototype: "/operator/checkpoint/checkpoint.go"
+  position {
+    x: -9.0
+    y: 2.0
+    z: -14.7
+  }
+  rotation {
+    x: 0.083900616
+    y: -0.75949085
+    z: 0.09998886
+    w: 0.63728845
+  }
+  component_properties {
+    id: "checkpoint"
+    properties {
+      id: "speed"
+      value: "3.0"
+      type: PROPERTY_TYPE_NUMBER
+    }
+  }
+  scale3 {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+  }
+}
+instances {
+  id: "checkpoint_4"
+  prototype: "/operator/checkpoint/checkpoint.go"
+  position {
+    x: -5.0
+    y: 4.0
+    z: -14.5
+  }
+  rotation {
+    x: -0.113039
+    y: -0.8586164
+    z: 0.06526309
+    w: 0.49572244
+  }
+  component_properties {
+    id: "checkpoint"
+    properties {
+      id: "speed"
+      value: "3.0"
+      type: PROPERTY_TYPE_NUMBER
+    }
+  }
+  scale3 {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+  }
+}
+instances {
+  id: "checkpoint_5"
+  prototype: "/operator/checkpoint/checkpoint.go"
+  position {
+    x: 1.0
+    y: 7.0
+    z: -12.5
+  }
+  rotation {
+    x: -0.0022585937
+    y: -0.96588904
+    z: -0.25880918
+    w: 0.008429186
+  }
+  component_properties {
+    id: "checkpoint"
+    properties {
+      id: "speed"
+      value: "5.0"
+      type: PROPERTY_TYPE_NUMBER
+    }
+  }
+  scale3 {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+  }
+}
+instances {
+  id: "checkpoint_6"
+  prototype: "/operator/checkpoint/checkpoint.go"
+  position {
+    x: 12.0
+    y: 5.0
+    z: -3.5
+  }
+  rotation {
+    x: -0.1484525
+    y: 0.7912401
+    z: 0.21201216
+    w: 0.55403227
+  }
+  component_properties {
+    id: "checkpoint"
+    properties {
+      id: "speed"
+      value: "5.0"
+      type: PROPERTY_TYPE_NUMBER
+    }
+  }
+  scale3 {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+  }
+}
+instances {
+  id: "checkpoint_7"
+  prototype: "/operator/checkpoint/checkpoint.go"
+  position {
+    x: 0.0
+    y: 0.7
+    z: -0.5
+  }
+  rotation {
+    x: 0.0
+    y: 0.70710677
+    z: 0.0
+    w: 0.70710677
+  }
+  component_properties {
+    id: "checkpoint"
+    properties {
+      id: "speed"
+      value: "5.0"
+      type: PROPERTY_TYPE_NUMBER
+    }
+  }
+  scale3 {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+  }
+}
+instances {
+  id: "checkpoint_8"
+  prototype: "/operator/checkpoint/checkpoint.go"
+  position {
+    x: -10.0
+    y: 2.0
+    z: 0.5
+  }
+  rotation {
+    x: 0.14224426
+    y: 0.80670726
+    z: 0.0996005
+    w: 0.56486255
+  }
+  component_properties {
+    id: "checkpoint"
+    properties {
+      id: "speed"
+      value: "5.0"
+      type: PROPERTY_TYPE_NUMBER
+    }
+  }
+  scale3 {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+  }
+}
+instances {
+  id: "checkpoint_9"
+  prototype: "/operator/checkpoint/checkpoint.go"
+  position {
+    x: -23.0
+    y: 4.0
+    z: 10.5
+  }
+  rotation {
+    x: -0.07547909
+    y: -0.8627299
+    z: 0.043577872
+    w: 0.49809736
+  }
+  component_properties {
+    id: "checkpoint"
+    properties {
+      id: "speed"
+      value: "5.0"
+      type: PROPERTY_TYPE_NUMBER
+    }
+  }
+  scale3 {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+  }
+}
+instances {
+  id: "checkpoint_10"
+  prototype: "/operator/checkpoint/checkpoint.go"
+  position {
+    x: -15.0
+    y: 1.5
+    z: 14.0
+  }
+  rotation {
+    x: 0.0
+    y: -0.70710677
+    z: 0.0
+    w: 0.70710677
+  }
+  component_properties {
+    id: "checkpoint"
+    properties {
+      id: "speed"
+      value: "5.0"
+      type: PROPERTY_TYPE_NUMBER
+    }
+  }
+  scale3 {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+  }
+}
+instances {
+  id: "checkpoint_11"
+  prototype: "/operator/checkpoint/checkpoint.go"
+  position {
+    x: -1.0
+    y: 6.5
+    z: 14.0
+  }
+  rotation {
+    x: 0.0
+    y: -0.70710677
+    z: 0.0
+    w: 0.70710677
+  }
+  component_properties {
+    id: "checkpoint"
+    properties {
+      id: "speed"
+      value: "5.0"
+      type: PROPERTY_TYPE_NUMBER
+    }
+  }
+  scale3 {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+  }
+}
+instances {
+  id: "checkpoint_12"
+  prototype: "/operator/checkpoint/checkpoint.go"
+  position {
+    x: 11.0
+    y: 15.5
+    z: 13.0
+  }
+  rotation {
+    x: -0.25
+    y: 0.25
+    z: 0.0669873
+    w: 0.9330127
+  }
+  component_properties {
+    id: "checkpoint"
+    properties {
+      id: "speed"
+      value: "2.0"
+      type: PROPERTY_TYPE_NUMBER
+    }
+  }
+  scale3 {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+  }
+}
+instances {
+  id: "checkpoint_13"
+  prototype: "/operator/checkpoint/checkpoint.go"
+  position {
+    x: 11.0
+    y: 9.5
+    z: 25.0
+  }
+  rotation {
+    x: 0.17364818
+    y: 0.0
+    z: 0.0
+    w: 0.9848077
+  }
+  component_properties {
+    id: "checkpoint"
+    properties {
+      id: "speed"
+      value: "5.0"
+      type: PROPERTY_TYPE_NUMBER
+    }
+  }
+  scale3 {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+  }
+}
+instances {
+  id: "checkpoint_14"
+  prototype: "/operator/checkpoint/checkpoint.go"
+  position {
+    x: 2.0
+    y: 3.5
+    z: 27.0
+  }
+  rotation {
+    x: -0.25881904
+    y: 0.0
+    z: 0.0
+    w: 0.9659258
+  }
+  component_properties {
+    id: "checkpoint"
+    properties {
+      id: "speed"
+      value: "2.0"
+      type: PROPERTY_TYPE_NUMBER
+    }
+  }
+  scale3 {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+  }
+}
+collection_instances {
+  id: "operator_1"
+  collection: "/operator/operator/operator.collection"
+  position {
+    x: 0.0
+    y: 11.0
+    z: 0.0
+  }
+  rotation {
+    x: -0.25881904
+    y: 0.0
+    z: 0.0
+    w: 0.9659258
+  }
+  instance_properties {
+    id: "operator"
+    properties {
+      id: "operator"
+      properties {
+        id: "is_active"
+        value: "false"
+        type: PROPERTY_TYPE_BOOLEAN
+      }
+    }
+  }
+  scale3 {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+  }
+}
+collection_instances {
+  id: "operator_2"
+  collection: "/operator/operator/operator.collection"
+  position {
+    x: -19.0
+    y: 4.0
+    z: -11.0
+  }
+  rotation {
+    x: -0.27059805
+    y: -0.6532815
+    z: -0.27059805
+    w: 0.6532815
+  }
+  instance_properties {
+    id: "operator"
+    properties {
+      id: "operator"
+      properties {
+        id: "maximum"
+        value: "25.0, 360.0, 30.0"
+        type: PROPERTY_TYPE_VECTOR3
+      }
+    }
+  }
+  scale3 {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+  }
+}
+collection_instances {
+  id: "city"
+  collection: "/assets/maps/city/city.collection"
+  position {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale3 {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+  }
+}
+scale_along_z: 0
+embedded_instances {
+  id: "scenario"
+  data: "components {\n"
+  "  id: \"scenario\"\n"
+  "  component: \"/main/scenario.script\"\n"
+  "  position {\n"
+  "    x: 0.0\n"
+  "    y: 0.0\n"
+  "    z: 0.0\n"
+  "  }\n"
+  "  rotation {\n"
+  "    x: 0.0\n"
+  "    y: 0.0\n"
+  "    z: 0.0\n"
+  "    w: 1.0\n"
+  "  }\n"
+  "}\n"
+  ""
+  position {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale3 {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+  }
+}
+embedded_instances {
+  id: "car"
+  children: "body"
+  data: "components {\n"
+  "  id: \"car\"\n"
+  "  component: \"/main/car.script\"\n"
+  "  position {\n"
+  "    x: 0.0\n"
+  "    y: 0.0\n"
+  "    z: 0.0\n"
+  "  }\n"
+  "  rotation {\n"
+  "    x: 0.0\n"
+  "    y: 0.0\n"
+  "    z: 0.0\n"
+  "    w: 1.0\n"
+  "  }\n"
+  "}\n"
+  ""
+  position {
+    x: 0.0
+    y: 0.5
+    z: 24.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale3 {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+  }
+}
+embedded_instances {
+  id: "checkpoints"
+  children: "checkpoint_1"
+  children: "checkpoint_10"
+  children: "checkpoint_11"
+  children: "checkpoint_12"
+  children: "checkpoint_13"
+  children: "checkpoint_14"
+  children: "checkpoint_2"
+  children: "checkpoint_3"
+  children: "checkpoint_4"
+  children: "checkpoint_5"
+  children: "checkpoint_6"
+  children: "checkpoint_7"
+  children: "checkpoint_8"
+  children: "checkpoint_9"
+  data: ""
+  position {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale3 {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+  }
+}
+embedded_instances {
+  id: "body"
+  data: "embedded_components {\n"
+  "  id: \"mesh\"\n"
+  "  type: \"mesh\"\n"
+  "  data: \"material: \\\"/render/materials/model.material\\\"\\n"
+  "vertices: \\\"/operator/assets/models/box.buffer\\\"\\n"
+  "textures: \\\"/assets/textures/blockout/blue_check.png\\\"\\n"
+  "primitive_type: PRIMITIVE_TRIANGLES\\n"
+  "\"\n"
+  "  position {\n"
+  "    x: 0.0\n"
+  "    y: 0.0\n"
+  "    z: 0.0\n"
+  "  }\n"
+  "  rotation {\n"
+  "    x: 0.0\n"
+  "    y: 0.0\n"
+  "    z: 0.0\n"
+  "    w: 1.0\n"
+  "  }\n"
+  "}\n"
+  ""
+  position {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale3 {
+    x: 2.0
+    y: 2.0
+    z: 2.0
+  }
+}
+embedded_instances {
+  id: "gui"
+  data: "components {\n"
+  "  id: \"hint\"\n"
+  "  component: \"/main/hint.gui\"\n"
+  "  position {\n"
+  "    x: 0.0\n"
+  "    y: 0.0\n"
+  "    z: 0.0\n"
+  "  }\n"
+  "  rotation {\n"
+  "    x: 0.0\n"
+  "    y: 0.0\n"
+  "    z: 0.0\n"
+  "    w: 1.0\n"
+  "  }\n"
+  "}\n"
+  ""
+  position {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+  }
+  rotation {
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+  }
+  scale3 {
+    x: 1.0
+    y: 1.0
+    z: 1.0
+  }
+}

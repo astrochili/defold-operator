@@ -1,0 +1,824 @@
+--[[
+  operator.script
+  github.com/astrochili/defold-operator
+
+  Copyright (c) 2022 Roman Silin
+  MIT license. See LICENSE for details.
+--]]
+
+local pointer = require 'pointer_lock.pointer'
+local operator = require 'operator.operator'
+local bezier = require 'operator.bezier'
+
+-- Properties
+
+go.property('is_active', true)
+go.property('internal_control', true)
+
+go.property('camera_fov', 75)
+go.property('camera_near_z', 0.1)
+go.property('camera_far_z', 1000)
+
+go.property('look_horizontal', true)
+go.property('look_vertical', true)
+
+go.property('inverted_horizontal', false)
+go.property('inverted_vertical', false)
+
+go.property('minimum', vmath.vector3(-89, -360, 0))
+go.property('maximum', vmath.vector3(89, 360, 30))
+
+go.property('sensitivity', 0.7)
+go.property('smoothness', 0.1)
+
+go.property('zoom', 0)
+go.property('zoom_step', 0.3)
+go.property('zoom_smoothness', 0.3)
+
+go.property('collision_check', true)
+go.property('collision_distance', 0.3)
+-- todo: go.property('collision_thickness', 0.2)
+
+go.property('ground_align_factor', 0.5)
+go.property('ground_align_smoothness', 0.5)
+
+-- Helpers
+
+local debug_colors = {
+  red = vmath.vector4(1, 0, 0, 1),
+  blue = vmath.vector4(0, 0, 1, 1)
+}
+
+local function quat_from_look(look)
+  local quat_x = vmath.quat_rotation_x(math.rad(look.x))
+  local quat_y = vmath.quat_rotation_y(math.rad(look.y))
+  local quat_z = vmath.quat_rotation_z(math.rad(look.z))
+  return quat_z * quat_y * quat_x
+end
+
+local function clamp_angle(angle, min, max)
+  local angle = angle
+
+  if angle < -360 then
+    angle = angle + 360
+  elseif angle > 360 then
+    angle = angle - 360
+  end
+
+  angle = math.min(math.max(angle, min), max)
+  return angle
+end
+
+-- Activation
+
+local function activate(self, is_active)
+  if is_active == self.is_active then
+    return
+  end
+
+  if is_active then
+    msg.post('.', hash 'acquire_input_focus')
+    msg.post(self.urls.camera, hash 'acquire_camera_focus')
+    msg.post('@render:', hash 'use_camera_projection')
+
+    self.is_active = true
+    operator.did_activate_operator(self.urls.this)
+  else
+    msg.post('.', hash 'release_input_focus')
+    msg.post(self.urls.camera, hash 'release_camera_focus')
+    
+    self.is_active = false
+    operator.did_deactivate_operator(self.urls.this)
+  end
+end
+
+-- Input
+
+local function handle_input(self, input)
+  if self.motion_sequence then
+    return
+  end
+
+  if input.zoom and self.zoom_step ~= 0 and self.maximum.z > self.minimum.z then
+    local zoom_target = self.zoom_target + self.zoom_step * input.zoom
+    self.zoom_target = math.max(math.min(zoom_target, self.maximum.z), self.minimum.z)
+  end
+  
+  if input.vertical and self.look_vertical then
+    local movement = input.vertical * self.sensitivity
+    movement = self.inverted_vertical and movement or -movement
+    self.look_target.x = self.look_target.x - movement
+
+    if not self.is_rotation_continious.x then
+      self.look_target.x = clamp_angle(self.look_target.x, self.minimum.x, self.maximum.x)
+    end
+  end
+
+  if input.horizontal and self.look_horizontal then
+    local movement = input.horizontal * self.sensitivity
+    movement = self.inverted_horizontal and movement or -movement
+    self.look_target.y = self.look_target.y + movement
+
+    if not self.is_rotation_continious.y then
+      self.look_target.y = clamp_angle(self.look_target.y, self.minimum.y, self.maximum.y)
+    end
+  end
+end
+
+-- Attachment and Detachment
+
+local function detach_from_object(self)
+  if not self.object then
+    return
+  end
+
+  local object = self.object
+
+  -- Detach from the object
+
+  go.set_parent('.', nil, false)
+  self.object = nil
+  self.ground_align = 0
+  self.ground_align_target = 0
+
+  -- Restore global position
+
+  local object_position = go.get_world_position(object)
+  local object_rotation = go.get_world_rotation(object)
+  
+  local local_position = vmath.rotate(object_rotation, go.get_position('.'))
+  local global_position = local_position + object_position
+  
+  go.set_position(global_position, '.')
+  
+  -- Restore global rotation
+
+  local object_look = go.get(object, hash 'euler')
+  
+  self.look = self.look + object_look
+  self.look_target = self.look
+
+  go.set('.', hash 'euler', self.look)
+
+  msg.post(object, hash 'operator_detached', { operator = self.urls.this })
+end
+
+local function attach_to_object(self, object)
+  if self.object == object then
+    return
+  end
+
+  -- Attach to the object
+
+  go.set_parent('.', object, false)
+  self.object = object
+  
+  -- Restore local position
+  
+  local object_position = go.get_world_position(object)
+  local object_rotation = go.get_world_rotation(object)
+
+  local global_position = go.get_world_position('.')
+  local local_position = vmath.rotate(vmath.conj(object_rotation), global_position - object_position)
+  
+  go.set_position(local_position, '.')
+  
+  -- Restore local rotation
+
+  local object_look = go.get(object, hash 'euler')
+  
+  self.look = self.look - object_look
+  self.look_target = self.look
+
+  go.set('.', hash 'euler', self.look)
+
+  msg.post(object, hash 'operator_attached', { operator = self.urls.this })
+end
+
+-- Motion
+
+local function stop_motion(self)
+  local interrupt = self.motion_sequence and #self.motion_sequence > 1
+
+  if interrupt then
+    if self.motion_observer then
+      msg.post(self.motion_observer, hash 'motion_interrupted')
+    end
+  end
+
+  self.motion_sequence = nil
+  self.motion_timer = nil
+  self.motion_observer = nil
+end
+
+local function start_motion(self, motion_sequence)
+  local motion_sequence = motion_sequence or self.motion_sequence
+  self.motion_sequence = motion_sequence
+
+  local original = motion_sequence[1]
+  local target = motion_sequence[2]
+
+  -- Sync attached and detached states
+
+  if original.object ~= target.object then
+    if original.object ~= nil then
+      local object_rotation = go.get_world_rotation(original.object)
+
+      detach_from_object(self)
+
+      if original.path_anchor then
+        original.path_anchor = vmath.rotate(object_rotation, original.path_anchor)
+      end
+    end
+    
+    if target.object ~= nil then
+      local object_rotation = go.get_world_rotation(target.object)
+
+      attach_to_object(self, target.object)
+
+      if original.path_anchor then
+        original.path_anchor = vmath.rotate(vmath.conj(object_rotation), original.path_anchor)
+      end
+    end
+
+    original.position = go.get_position('.')
+    original.look = self.look
+  end
+
+  -- Make a bezier path
+
+  local path_points = { original.position }
+
+  local after = motion_sequence[3]
+
+  if after and target.bezier then
+    local path_anchor_direction = vmath.normalize(after.position - original.position)
+    target.path_anchor = path_anchor_direction
+  end
+
+  local segment_distance = vmath.length(target.position - original.position)
+
+  
+  if original.path_anchor then
+    -- Add the first anchor
+    local original_anchor = original.position + original.path_anchor * segment_distance / 2
+    table.insert(path_points, original_anchor)
+  end
+
+  if target.path_anchor then
+    -- Add the second anchor
+    local target_anchor = target.position - target.path_anchor * segment_distance / 2
+    table.insert(path_points, target_anchor)
+  end
+
+  table.insert(path_points, target.position)
+
+  if #path_points > 2 then
+    target.bezier_path = bezier.new(path_points, operator.flight_bezier_samples_count)
+  end
+
+  -- Duration and distance
+
+  local original_camera_quat = quat_from_look(original.look)
+  local original_camera_distance = vmath.rotate(original_camera_quat, vmath.vector3(0, 0, original.zoom))
+  local original_camera_position = original.position + original_camera_distance
+  original.camera_position = original_camera_position
+
+  local target_camera_quat = quat_from_look(target.look)
+  local target_camera_distance = vmath.rotate(target_camera_quat, vmath.vector3(0, 0, target.zoom))
+  local target_camera_position = target.position + target_camera_distance
+  target.camera_position = target_camera_position
+
+  local distance = vmath.length(original_camera_position - target_camera_position)
+  target.distance = distance
+
+  local original_speed = original.inout and 0 or original.speed
+  local average_speed = (original_speed + target.speed) / 2
+  local duration = average_speed > 0 and distance / average_speed or 0
+  target.duration = duration
+  
+  self.motion_timer = 0
+end
+
+local function follow_sequence(self, sequence, sender)
+  if self.motion_sequence then
+    stop_motion(self)
+  end
+
+  local previous_point = {
+    object = self.object,
+    position = go.get_position('.'),
+    look = self.look,
+    zoom = self.zoom,
+    speed = self.motion_speed
+  }
+
+  local motion_sequence = { previous_point }
+
+  -- Prepare the sequence
+
+  for _, item in ipairs(sequence or { }) do
+    local point
+
+    if type(item) == 'userdata' then
+      -- Item is checkpoint url
+      local checkpoint = msg.url(item)
+
+      local position = go.get_position(checkpoint)
+      local object = go.get_parent(checkpoint)
+      local look = go.get(checkpoint, hash 'euler')
+      
+      checkpoint.fragment = hash 'checkpoint'
+
+      point = {
+        checkpoint = item,
+        object = object,
+        position = position,
+        look = look,
+        zoom = go.get(checkpoint, 'zoom'),
+        speed = go.get(checkpoint, 'speed'),
+        inout = go.get(checkpoint, 'inout'),
+        bezier = go.get(checkpoint, 'bezier'),
+      }
+    else
+      -- Item is checkpoint table
+      point = item
+      point.object = point.object
+      point.position = point.position or vmath.vector3()
+      point.look = point.look or previous_point.look
+      point.zoom = point.zoom or previous_point.zoom
+      point.speed = point.speed or previous_point.speed
+      point.inout = point.inout or false
+      point.bezier = not point.bezier == false
+    end
+
+    local function correct_look(from, to)
+      local planned_turning = to - from
+
+      if planned_turning > 180 then
+        return to - 360
+      elseif planned_turning < -180 then
+        return to + 360
+      else
+        return to
+      end
+    end
+
+    point.look.x = correct_look(previous_point.look.x, point.look.x)
+    point.look.y = correct_look(previous_point.look.y, point.look.y)
+    point.look.z = correct_look(previous_point.look.z, point.look.z)
+
+    table.insert(motion_sequence, point)
+    previous_point = point
+  end
+
+  self.motion_observer = sender
+  start_motion(self, motion_sequence)
+end
+
+local function follow_point(self, point, sender)
+  local point = point
+
+  if type(point) == 'table' then
+    local object = msg.url(point.object)
+    object.fragment = nil
+
+    point = {
+      object = object,
+      position = point.position or vmath.vector3(),
+      look = point.look or vmath.vector3(),
+      zoom = point.zoom or self.zoom,
+      speed = point.speed or 0,
+      inout = point.inout or false,
+      bezier = not point.bezier == false
+    }
+  end
+
+  follow_sequence(self, { point }, sender)
+end
+
+local function unfollow(self)
+  stop_motion(self)
+  detach_from_object(self)
+end
+
+-- Ground normal
+
+local function did_update_ground_normal(self, ground_normal)
+  if not self.object then
+    return
+  end
+
+  local vector_up = vmath.vector3(0, 1, 0)
+  local ground_normal = ground_normal or vector_up
+  
+  local quat_y = vmath.quat_rotation_y(math.rad(self.look.y))
+  local camera_plane_direction = vmath.rotate(quat_y, vmath.vector3(0, 0, -1))
+  local ground_normal_direction = operator.project_on_plane(vector_up, ground_normal)
+
+  if vmath.length(ground_normal_direction) > 0 then
+    ground_normal_direction = vmath.normalize(ground_normal_direction)
+  end
+  
+  local camera_direction_factor = 1 - vmath.length(camera_plane_direction + ground_normal_direction)
+  self.ground_align_target = operator.angle_between(vector_up, ground_normal) * camera_direction_factor * self.ground_align_factor
+end
+
+local function debug_bezier_lines(self, target)
+  for index = 1, #target.bezier_path.samples do
+    local start_progress = (index - 1) / #target.bezier_path.samples
+    local start_point = target.bezier_path:uniform_position(start_progress)
+
+    local end_pregress = index / #target.bezier_path.samples
+    local end_point = target.bezier_path:uniform_position(end_pregress)
+
+    if target.object then
+      local object_position = go.get_world_position(target.object)
+      local object_rotation = go.get_world_rotation(target.object)
+      
+      start_point = vmath.rotate(object_rotation, start_point)
+      start_point = start_point + object_position
+
+      end_point = vmath.rotate(object_rotation, end_point)
+      end_point = end_point + object_position
+    end
+
+    local line = { 
+      start_point = start_point,
+      end_point = end_point,
+      color = debug_colors.red
+    }
+    table.insert(self.debug_lines, line)
+  end
+end
+
+-- Updating
+
+local function update_motion(self, dt)
+  local original = self.motion_sequence[1]
+  local target = self.motion_sequence[2]
+  
+  -- Timer
+  
+  self.motion_timer = self.motion_timer + dt
+  local time_progress = self.motion_timer / target.duration
+  
+  if time_progress >= 1 then
+    if #self.motion_sequence > 2 then
+      -- There is a next point, glide to it
+      local overtime = self.motion_timer - target.duration
+
+      table.remove(self.motion_sequence, 1)
+      self.motion_timer = nil
+      
+      if not target.inout then
+        msg.post(self.motion_observer, hash 'motion_point', {
+          object = target.object,
+          checkpoint = target.checkpoint
+        })
+      end
+      
+      start_motion(self)
+      update_motion(self, overtime)
+
+      return
+    else
+      -- This is the end, align to the finish point
+      time_progress = 1
+    end
+  end
+
+  -- Speed and progress
+  
+  local path_progress
+
+  if original.speed > 0 or target.speed > 0 then
+    local starting_speed = original.inout and 0 or original.speed
+
+    if target.inout then
+      if time_progress < 0.5 then
+        self.motion_speed = operator.lerp(time_progress * 2, starting_speed, target.speed)
+        local avarage_speed = (starting_speed + self.motion_speed) / 2
+        path_progress = avarage_speed * time_progress * target.duration / target.distance
+      else
+        self.motion_speed = operator.lerp((time_progress - 0.5) * 2, target.speed, starting_speed)
+        local avarage_speed = (target.speed + self.motion_speed) / 2
+        path_progress = 0.5 + avarage_speed * (time_progress - 0.5) * target.duration / target.distance
+      end
+    else
+      self.motion_speed = operator.lerp(time_progress, starting_speed, target.speed)
+      local avarage_speed = (starting_speed + self.motion_speed) / 2
+      path_progress = avarage_speed * time_progress * target.duration / target.distance
+    end    
+  else
+    path_progress = 1
+  end
+
+  -- Position
+
+  local position
+  
+  if target.bezier_path then
+    position = target.bezier_path:uniform_position(path_progress)
+
+    if self.is_debug then
+      debug_bezier_lines(self, target)
+    end
+  else
+    position = original.position + (target.position - original.position) * path_progress
+  end
+
+  go.set_position(position, '.')
+
+  -- Look
+  
+  local look_easing = operator.flight_look_easing(path_progress)
+  self.look = operator.lerp(look_easing, original.look, target.look)
+  self.look_target = self.look
+  go.set('.', hash 'euler', self.look)
+
+  -- Zoom
+
+  local zoom_easing = operator.flight_zoom_easing(path_progress)
+  local zoom = operator.lerp(zoom_easing, original.zoom, target.zoom)
+  self.zoom = zoom
+  self.zoom_target = zoom
+
+  self.camera_position = vmath.vector3(0, 0, zoom)
+  go.set_position(self.camera_position, self.urls.camera)
+
+  -- Check for finishing
+
+  if time_progress == 1 and #self.motion_sequence == 2 then
+    local observer = self.motion_observer
+    stop_motion(self)
+
+    msg.post(observer, hash 'motion_finished', {
+      object = target.object,
+      checkpoint = target.checkpoint
+    })
+  end
+end
+
+local function update_look(self, dt)
+  local look = vmath.vector3(self.look)
+  local zoom = self.zoom
+  
+  local look_target = vmath.vector3(self.look_target)
+  local zoom_target = self.zoom_target
+
+  -- Calculate look
+
+  local looking = look_target - look
+  local smooth_looking = looking
+
+  if self.smoothness > 0 then
+    smooth_looking = looking * 1 / self.smoothness * dt
+  end
+
+  if vmath.length(smooth_looking) > vmath.length(looking) then
+    smooth_looking = looking
+  end
+
+  look = look + smooth_looking
+
+  -- Calculate ground alignment
+
+  if self.ground_align_factor > 0 then
+    local alignment = self.ground_align_target - self.ground_align
+    local smooth_alignment = alignment
+
+    if self.ground_align_smoothness > 0 then
+      smooth_alignment = alignment * 1 / self.ground_align_smoothness * dt
+    end
+  
+    if math.abs(smooth_alignment) > math.abs(alignment) then
+      smooth_alignment = alignment
+    end
+  
+    self.ground_align = self.ground_align + smooth_alignment
+  end
+
+  -- Correct continious rotation
+
+  local too = {
+    positive = {
+      x = look.x > self.maximum.x and look_target.x > self.maximum.x,
+      y = look.y > self.maximum.y and look_target.y > self.maximum.y  
+    },
+    negative = {
+      x = look.x < self.minimum.x and look_target.x < self.minimum.x,
+      y = look.y < self.minimum.y and look_target.y < self.minimum.y  
+    }
+  }
+
+  local out_of = {
+    x = too.positive.x or too.negative.x,
+    y = too.positive.y or too.negative.y,
+  }
+
+  if out_of.x and math.abs(looking.x) < 360 then
+    look.x = clamp_angle(look.x, self.minimum.x, self.maximum.x)
+    look_target.x = clamp_angle(look_target.x, self.minimum.x, self.maximum.x)  
+  end
+
+  if out_of.y and math.abs(looking.y) < 360 then
+    look.y = clamp_angle(look.y, self.minimum.y, self.maximum.y)
+    look_target.y = clamp_angle(look_target.y, self.minimum.y, self.maximum.y)  
+  end
+
+  -- Set rotation
+
+  local euler = look + vmath.vector3(self.ground_align, 0, 0)
+
+  if euler ~= self.euler then
+    go.set('.', hash 'euler', euler)
+    self.euler = euler
+  end
+  
+  self.look = look
+  self.look_target = look_target
+
+  -- Calculate zoom
+  
+  local zooming = zoom_target - zoom
+  local smooth_zooming = zooming
+
+  if self.zoom_smoothness > 0 then
+    smooth_zooming = zooming * 1 / self.zoom_smoothness * dt
+  end
+  
+  if math.abs(smooth_zooming) > math.abs(zooming) then
+    smooth_zooming = zooming
+  end
+
+  zoom = zoom + smooth_zooming
+
+  -- Collision check
+
+  camera_position = vmath.vector3(0, 0, zoom)
+  
+  if self.collision_check and zoom > 0 then
+    local ray_from = go.get_world_position('.')
+    local camera_sensor = vmath.vector3(0, 0, zoom_target + self.collision_distance)
+
+    local world_rotation = go.get_world_rotation('.')
+    local ray_to = ray_from + vmath.rotate(world_rotation, camera_sensor)
+    local result = physics.raycast(ray_from, ray_to, operator.camera_collisions_groups)
+
+    if result then
+      zoom = (zoom_target + self.collision_distance) * result.fraction - self.collision_distance
+    end
+  end
+
+  -- Set camera position
+
+  if zoom ~= self.zoom then
+    self.camera_position = vmath.vector3(0, 0, zoom)
+    go.set_position(self.camera_position, self.urls.camera)
+  end
+
+  if self.is_debug and zoom ~= 0 and not self.is_active then
+    local line = { 
+      start_point = go.get_world_position('.'),
+      end_point = go.get_world_position(self.urls.camera),
+      color = debug_colors.blue
+    }
+    table.insert(self.debug_lines, line)
+  end
+
+  self.zoom = zoom
+  self.zoom_target = zoom_target
+end
+
+local function draw_debug_lines(self)
+  for _, line in ipairs(self.debug_lines) do
+    msg.post('@render:', hash 'draw_line', line)
+  end
+
+  self.debug_lines = { }
+end
+
+-- Lifecycle
+
+function init(self)
+  self.urls = {
+    this = msg.url('.'),
+    camera = msg.url('camera')
+  }
+
+  self.bindings = {
+    zoom_in = hash 'mouse_wheel_up',
+    zoom_out = hash 'mouse_wheel_down',
+  }
+
+  self.is_pointer_locked = false
+
+  self.is_rotation_continious = {
+    x = math.abs(self.minimum.x) + math.abs(self.maximum.x) >= 720,
+    y = math.abs(self.minimum.y) + math.abs(self.maximum.y) >= 720
+  }
+
+  self.ground_align = 0
+  self.ground_align_target = 0
+
+  self.motion_sequence = nil
+  self.motion_timer = nil
+  self.motion_observer = nil
+  self.motion_speed = 0
+
+  self.euler = go.get('.', hash 'euler')
+  self.look = self.euler
+  self.look_target = self.look
+
+  self.camera_position = vmath.vector3(0, 0, self.zoom)
+  self.zoom_target = self.zoom
+  go.set_position(self.camera_position, self.urls.camera)
+
+  local camera_component = self.urls.camera
+  camera_component.fragment = hash 'camera'
+  
+  go.set(camera_component, hash 'fov', math.rad(self.camera_fov))
+  go.set(camera_component, hash 'near_z', self.camera_near_z)
+  go.set(camera_component, hash 'far_z', self.camera_far_z)
+
+  self.object = nil
+
+  self.is_debug = false
+  self.debug_lines = { }
+
+  operator.did_init_operator(self.urls.this)
+
+  if self.is_active then
+    self.is_active = false
+    activate(self, true)
+  end
+end
+
+function update(self, dt)
+  if self.motion_timer then
+    update_motion(self, dt)
+  else
+    self.motion_speed = 0
+    update_look(self, dt)
+  end
+
+  if self.is_debug then
+    draw_debug_lines(self)
+  end
+end
+
+function on_input(self, action_id, action)
+  if not self.internal_control then
+    return
+  end
+
+  local input = { }
+
+  if action_id == self.bindings.zoom_in then
+    input.zoom = -1
+  elseif action_id == self.bindings.zoom_out then
+    input.zoom = 1
+  end
+  
+  if action.dx and action.dy and not action_id then
+    if self.is_pointer_locked ~= pointer.locked then
+      -- Skip the first mouse movement by cursor jumping because locking.
+      self.is_pointer_locked = pointer.locked
+    elseif pointer.locked then
+      input.horizontal = action.dx or 0
+      input.vertical = action.dy or 0
+    end
+  end
+
+  handle_input(self, input)
+end
+
+function on_message(self, message_id, message, sender)
+  if message_id == hash 'debug' then
+    self.is_debug = message.is_debug
+    msg.post('camera#mesh', self.is_debug and hash('enable') or hash('disable'))
+  elseif message_id == hash 'activate' then
+    activate(self, true)
+  elseif message_id == hash 'deactivate' then
+    activate(self, false)
+  elseif message_id == hash 'follow_sequence' then
+    follow_sequence(self, message, sender)
+  elseif message_id == hash 'follow_point' then
+    follow_point(self, message, sender)
+  elseif message_id == hash 'unfollow' then
+    unfollow(self)
+  elseif message_id == hash 'ground_normal' then
+    did_update_ground_normal(self, message.normal)
+  elseif message_id == hash 'internal_control' then
+    self.internal_control = message.is_enabled
+    self.bindings.zoom_out = message.zoom_out or self.bindings.zoom_out
+    self.bindings.zoom_in = message.zoom_in or self.bindings.zoom_in
+  elseif message_id == hash 'manual_control' then
+    handle_input(self, message)
+  end
+end
+
+function final(self)
+  operator.did_final_operator(self.urls.this)
+end

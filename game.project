@@ -1,0 +1,33 @@
+[library]
+include_dirs = operator
+
+[project]
+title = Defold Operator
+dependencies#0 = https://github.com/indiesoftby/defold-pointer-lock/archive/1b5e05b94491bb7e041052990122dd846e1605a9.zip
+
+[bootstrap]
+main_collection = /main/main.collectionc
+render = /render/example.renderc
+
+[input]
+game_binding = /builtins/input/all.input_bindingc
+
+[physics]
+type = 3D
+debug_alpha = 0.2
+debug = 0
+
+[mesh]
+max_count = 512
+
+[resource]
+max_resources = 2048
+
+[html5]
+scale_mode = stretch
+show_made_with_defold = 0
+show_fullscreen_button = 0
+
+[display]
+high_dpi = 1
+

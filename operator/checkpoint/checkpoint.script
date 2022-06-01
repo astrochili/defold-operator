@@ -1,0 +1,29 @@
+--[[
+  checkpoint.script
+  github.com/astrochili/defold-operator
+
+  Copyright (c) 2022 Roman Silin
+  MIT license. See LICENSE for details.
+--]]
+
+local operator = require 'operator.operator'
+
+go.property('zoom', 0)
+go.property('speed', 0)
+go.property('inout', false)
+go.property('bezier', true)
+
+function init(self)
+  self.url = msg.url('.')
+  operator.did_init_checkpoint(self.url)
+end
+
+function final(self)
+  operator.did_final_checkpoint(self.url)
+end
+
+function on_message(self, message_id, message, sender)
+  if message_id == hash 'debug' then
+    msg.post('#mesh', message.is_debug and hash('enable') or hash('disable'))
+  end
+end

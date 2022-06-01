@@ -1,0 +1,6 @@
+material: "/render/materials/model.material"
+vertices: "/operator/assets/models/box.buffer"
+textures: "/operator/assets/textures/camera.png"
+primitive_type: PRIMITIVE_TRIANGLES
+position_stream: "position"
+normal_stream: "normal"
