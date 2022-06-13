@@ -8,9 +8,11 @@ This is a tweakable camera movement controller suitable for 3D games on the [Def
 
 Showing your player the level by flying around and finish the flight by smooth attachment to the character — sounds like a classic use case.
 
+This extension is not about rendering so you can use any render script that you want.
+
 [Play HTML5 demo](https://astronachos.com/defold/operator).
 
-This extension is not about rendering so you can use any render script that you want.
+[Discuss on the forum](https://forum.defold.com/t/operator-camera-movement-controller-for-3d-games/71094/3).
 
 ## Features
 
@@ -47,7 +49,7 @@ Activates the operator during initialization.
 
 ### internal_control
 
-Enables internal control with a mouse input.
+Enables internal control with a mouse input during initialization.
 
 ### camera_fov
 
@@ -287,16 +289,10 @@ msg.post(operator_url, hash 'ground_normal', { normal = normal })
 
 ### internal_control
 
-Configure internal input controls. You can completely disable internal controls or rebind zoom action identifiers. It's a patch message so all message options are optional.
+Enables or disables internal control with a mouse input.
 
 ```lua
-local config = {
-    is_enabled = true
-    zoom_in = hash 'mouse_wheel_up',
-    zoom_out = hash 'mouse_wheel_down'
-}
-
-msg.post(operator_url, hash 'internal_control', config)
+msg.post(operator_url, hash 'internal_control', { is_inabled = true })
 ```
 
 ### manual_control

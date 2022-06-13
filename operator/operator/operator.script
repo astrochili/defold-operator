@@ -812,8 +812,6 @@ function on_message(self, message_id, message, sender)
     did_update_ground_normal(self, message.normal)
   elseif message_id == hash 'internal_control' then
     self.internal_control = message.is_enabled
-    self.bindings.zoom_out = message.zoom_out or self.bindings.zoom_out
-    self.bindings.zoom_in = message.zoom_in or self.bindings.zoom_in
   elseif message_id == hash 'manual_control' then
     handle_input(self, message)
   end
