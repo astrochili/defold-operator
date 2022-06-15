@@ -297,7 +297,7 @@ msg.post(operator_url, hash 'internal_control', { is_inabled = true })
 
 ### manual_control
 
-Manual control the look and zoom by input values. This can be useful on devices without a mouse or if you prefer to control everything by yourself.
+Manually control the look and zoom by input values. This can be useful on devices without a mouse or if you prefer to control everything by yourself.
 
 ```lua
 local input = {
