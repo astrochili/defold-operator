@@ -42,6 +42,7 @@ go.property('collision_distance', 0.3)
 go.property('ground_align_factor', 0.5)
 go.property('ground_align_smoothness', 0.5)
 
+--
 -- Helpers
 
 local debug_colors = {
@@ -54,6 +55,27 @@ local function quat_from_look(look)
   local quat_y = vmath.quat_rotation_y(math.rad(look.y))
   local quat_z = vmath.quat_rotation_z(math.rad(look.z))
   return quat_z * quat_y * quat_x
+end
+
+local function short_rotation_angle(original, target)
+  local planned_rotation = target - original
+  local nearest_angle = target
+
+  if planned_rotation > 180 then
+    nearest_angle = target - 360
+  elseif planned_rotation < -180 then
+    nearest_angle = target + 360
+  end
+
+  return nearest_angle
+end
+
+local function short_rotation_look(original, target)
+  local nearest_look = vmath.vector3(target)
+  nearest_look.x = short_rotation_angle(original.x, target.x)
+  nearest_look.y = short_rotation_angle(original.y, target.y)
+  nearest_look.z = short_rotation_angle(original.z, target.z)
+  return nearest_look
 end
 
 local function clamp_angle(angle, min, max)
@@ -69,6 +91,50 @@ local function clamp_angle(angle, min, max)
   return angle
 end
 
+local function camera_distance(look, zoom)
+  local look_quat = quat_from_look(look)
+  local camera_distance = vmath.rotate(look_quat, vmath.vector3(0, 0, zoom))
+  return camera_distance
+end
+
+local function move_motion_point_with_object(point, object_movement)
+  point.position = point.position + object_movement
+  point.camera_position = point.camera_position + object_movement
+
+  if point.bezier_path then
+    point.bezier_path.origin = point.bezier_path.origin + object_movement
+  end
+end
+
+--
+-- Debug
+
+local function debug_bezier_lines(self, target)
+  for index = 1, #target.bezier_path.samples do
+    local start_progress = (index - 1) / #target.bezier_path.samples
+    local start_point = target.bezier_path:uniform_position(start_progress)
+
+    local end_pregress = index / #target.bezier_path.samples
+    local end_point = target.bezier_path:uniform_position(end_pregress)
+
+    local line = { 
+      start_point = start_point,
+      end_point = end_point,
+      color = debug_colors.red
+    }
+    table.insert(self.debug_lines, line)
+  end
+end
+
+local function draw_debug_lines(self)
+  for _, line in ipairs(self.debug_lines) do
+    msg.post('@render:', hash 'draw_line', line)
+  end
+
+  self.debug_lines = { }
+end
+
+--
 -- Activation
 
 local function activate(self, is_active)
@@ -92,6 +158,7 @@ local function activate(self, is_active)
   end
 end
 
+--
 -- Input
 
 local function handle_input(self, input)
@@ -125,7 +192,19 @@ local function handle_input(self, input)
   end
 end
 
+--
 -- Attachment and Detachment
+
+local function attach_to_object(self, object)
+  if self.object == object then
+    return
+  end
+
+  self.object = object
+  self.object_position = go.get_world_position(object)
+  
+  msg.post(object, hash 'operator_attached', { operator = self.urls.this })
+end
 
 local function detach_from_object(self)
   if not self.object then
@@ -134,67 +213,49 @@ local function detach_from_object(self)
 
   local object = self.object
 
-  -- Detach from the object
-
-  go.set_parent('.', nil, false)
   self.object = nil
+  self.object_position = nil
+  
   self.ground_align = 0
   self.ground_align_target = 0
-
-  -- Restore global position
-
-  local object_position = go.get_world_position(object)
-  local object_rotation = go.get_world_rotation(object)
-  
-  local local_position = vmath.rotate(object_rotation, go.get_position('.'))
-  local global_position = local_position + object_position
-  
-  go.set_position(global_position, '.')
-  
-  -- Restore global rotation
-
-  local object_look = go.get(object, hash 'euler')
-  
-  self.look = self.look + object_look
-  self.look_target = self.look
-
-  go.set('.', hash 'euler', self.look)
 
   msg.post(object, hash 'operator_detached', { operator = self.urls.this })
 end
 
-local function attach_to_object(self, object)
-  if self.object == object then
+--
+-- Zoom collapsing
+
+local function collapse_zoom(self)
+  if self.zoom == 0 then
     return
   end
-
-  -- Attach to the object
-
-  go.set_parent('.', object, false)
-  self.object = object
   
-  -- Restore local position
-  
-  local object_position = go.get_world_position(object)
-  local object_rotation = go.get_world_rotation(object)
+  self.position = self.position + camera_distance(self.look, self.zoom)
+  go.set_position(self.position, '.')
 
-  local global_position = go.get_world_position('.')
-  local local_position = vmath.rotate(vmath.conj(object_rotation), global_position - object_position)
-  
-  go.set_position(local_position, '.')
-  
-  -- Restore local rotation
+  self.camera_position = vmath.vector3()
+  go.set_position(self.camera_position, self.urls.camera)
 
-  local object_look = go.get(object, hash 'euler')
-  
-  self.look = self.look - object_look
-  self.look_target = self.look
-
-  go.set('.', hash 'euler', self.look)
-
-  msg.post(object, hash 'operator_attached', { operator = self.urls.this })
+  self.zoom = 0
+  self.zoom_target = 0
 end
 
+local function uncollapse_zoom(self, zoom)
+    if zoom == 0 then
+      return
+    end
+
+    self.position = self.position - camera_distance(self.look, zoom)
+    go.set_position(self.position, '.')
+
+    self.camera_position = vmath.vector3(0, 0, zoom)
+    go.set_position(self.camera_position, self.urls.camera)
+
+    self.zoom = zoom
+    self.zoom_target = zoom
+end
+
+--
 -- Motion
 
 local function stop_motion(self)
@@ -209,6 +270,7 @@ local function stop_motion(self)
   self.motion_sequence = nil
   self.motion_timer = nil
   self.motion_observer = nil
+  self.motion_speed = 0
 end
 
 local function start_motion(self, motion_sequence)
@@ -217,79 +279,55 @@ local function start_motion(self, motion_sequence)
 
   local original = motion_sequence[1]
   local target = motion_sequence[2]
-
+  
   -- Sync attached and detached states
-
+  
   if original.object ~= target.object then
     if original.object ~= nil then
-      local object_rotation = go.get_world_rotation(original.object)
-
       detach_from_object(self)
-
-      if original.path_anchor then
-        original.path_anchor = vmath.rotate(object_rotation, original.path_anchor)
-      end
     end
     
     if target.object ~= nil then
-      local object_rotation = go.get_world_rotation(target.object)
-
       attach_to_object(self, target.object)
-
-      if original.path_anchor then
-        original.path_anchor = vmath.rotate(vmath.conj(object_rotation), original.path_anchor)
-      end
     end
-
-    original.position = go.get_position('.')
-    original.look = self.look
   end
 
+  if target.object ~= nil then
+    move_motion_point_with_object(target, self.object_position)
+  end
+  
   -- Make a bezier path
 
-  local path_points = { original.position }
+  local path_points = { original.camera_position }
 
   local after = motion_sequence[3]
 
   if after and target.bezier then
-    local path_anchor_direction = vmath.normalize(after.position - original.position)
+    local path_anchor_direction = vmath.normalize(after.camera_position - original.camera_position)
     target.path_anchor = path_anchor_direction
   end
 
-  local segment_distance = vmath.length(target.position - original.position)
+  local segment_distance = vmath.length(target.camera_position - original.camera_position)
 
-  
   if original.path_anchor then
     -- Add the first anchor
-    local original_anchor = original.position + original.path_anchor * segment_distance / 2
+    local original_anchor = original.camera_position + original.path_anchor * segment_distance / 2
     table.insert(path_points, original_anchor)
   end
 
   if target.path_anchor then
     -- Add the second anchor
-    local target_anchor = target.position - target.path_anchor * segment_distance / 2
+    local target_anchor = target.camera_position - target.path_anchor * segment_distance / 2
     table.insert(path_points, target_anchor)
   end
 
-  table.insert(path_points, target.position)
+  table.insert(path_points, target.camera_position)
 
-  if #path_points > 2 then
-    target.bezier_path = bezier.new(path_points, operator.flight_bezier_samples_count)
-  end
+  target.bezier_path = bezier.new(path_points, operator.flight_bezier_samples_count)
 
   -- Duration and distance
 
-  local original_camera_quat = quat_from_look(original.look)
-  local original_camera_distance = vmath.rotate(original_camera_quat, vmath.vector3(0, 0, original.zoom))
-  local original_camera_position = original.position + original_camera_distance
-  original.camera_position = original_camera_position
-
-  local target_camera_quat = quat_from_look(target.look)
-  local target_camera_distance = vmath.rotate(target_camera_quat, vmath.vector3(0, 0, target.zoom))
-  local target_camera_position = target.position + target_camera_distance
-  target.camera_position = target_camera_position
-
-  local distance = vmath.length(original_camera_position - target_camera_position)
+  local distance = vmath.length(original.camera_position - target.camera_position)
   target.distance = distance
 
   local original_speed = original.inout and 0 or original.speed
@@ -304,10 +342,15 @@ local function follow_sequence(self, sequence, sender)
   if self.motion_sequence then
     stop_motion(self)
   end
+  
+  -- Starting point
+
+  collapse_zoom(self)
 
   local previous_point = {
     object = self.object,
-    position = go.get_position('.'),
+    position = self.position,
+    camera_position = self.position,
     look = self.look,
     zoom = self.zoom,
     speed = self.motion_speed
@@ -317,14 +360,14 @@ local function follow_sequence(self, sequence, sender)
 
   -- Prepare the sequence
 
-  for _, item in ipairs(sequence or { }) do
+  for _, item in ipairs(sequence) do
     local point
 
     if type(item) == 'userdata' then
       -- Item is checkpoint url
       local checkpoint = msg.url(item)
 
-      local position = go.get_position(checkpoint)
+      local position = go.get_world_position(checkpoint)
       local object = go.get_parent(checkpoint)
       local look = go.get(checkpoint, hash 'euler')
       
@@ -342,35 +385,25 @@ local function follow_sequence(self, sequence, sender)
       }
     else
       -- Item is checkpoint table
-      point = item
-      point.object = point.object
-      point.position = point.position or vmath.vector3()
-      point.look = point.look or previous_point.look
-      point.zoom = point.zoom or previous_point.zoom
-      point.speed = point.speed or previous_point.speed
-      point.inout = point.inout or false
-      point.bezier = not point.bezier == false
+      point = {
+        object = item.object,
+        position = item.position or vmath.vector3(),
+        look = item.look or previous_point.look,
+        zoom = item.zoom or previous_point.zoom,
+        speed = item.speed or previous_point.speed,
+        inout = item.inout or false,
+        bezier = not item.bezier == false
+      }
     end
 
-    local function correct_look(from, to)
-      local planned_turning = to - from
-
-      if planned_turning > 180 then
-        return to - 360
-      elseif planned_turning < -180 then
-        return to + 360
-      else
-        return to
-      end
-    end
-
-    point.look.x = correct_look(previous_point.look.x, point.look.x)
-    point.look.y = correct_look(previous_point.look.y, point.look.y)
-    point.look.z = correct_look(previous_point.look.z, point.look.z)
-
+    point.look = short_rotation_look(previous_point.look, point.look)
+    point.camera_position = point.position + camera_distance(point.look, point.zoom)
+    
     table.insert(motion_sequence, point)
     previous_point = point
   end
+
+  -- Start
 
   self.motion_observer = sender
   start_motion(self, motion_sequence)
@@ -402,6 +435,7 @@ local function unfollow(self)
   detach_from_object(self)
 end
 
+--
 -- Ground normal
 
 local function did_update_ground_normal(self, ground_normal)
@@ -424,71 +458,70 @@ local function did_update_ground_normal(self, ground_normal)
   self.ground_align_target = operator.angle_between(vector_up, ground_normal) * camera_direction_factor * self.ground_align_factor
 end
 
-local function debug_bezier_lines(self, target)
-  for index = 1, #target.bezier_path.samples do
-    local start_progress = (index - 1) / #target.bezier_path.samples
-    local start_point = target.bezier_path:uniform_position(start_progress)
+--
+-- Updating
 
-    local end_pregress = index / #target.bezier_path.samples
-    local end_point = target.bezier_path:uniform_position(end_pregress)
+local function update_position(self)
+  local object_position = self.object_position
+  self.object_position = go.get_world_position(self.object)
+  local object_movement = self.object_position - object_position
 
-    if target.object then
-      local object_position = go.get_world_position(target.object)
-      local object_rotation = go.get_world_rotation(target.object)
-      
-      start_point = vmath.rotate(object_rotation, start_point)
-      start_point = start_point + object_position
+  if vmath.length(object_movement) == 0 then
+    return
+  end
 
-      end_point = vmath.rotate(object_rotation, end_point)
-      end_point = end_point + object_position
-    end
+  local position = self.position + object_movement
 
-    local line = { 
-      start_point = start_point,
-      end_point = end_point,
-      color = debug_colors.red
-    }
-    table.insert(self.debug_lines, line)
+  if self.position ~= position then
+    self.position = position
+    go.set_position(self.position, '.')
+  end
+
+  for _, motion_point in ipairs(self.motion_sequence or { }) do
+    move_motion_point_with_object(motion_point, object_movement)
   end
 end
-
--- Updating
 
 local function update_motion(self, dt)
   local original = self.motion_sequence[1]
   local target = self.motion_sequence[2]
   
-  -- Timer
+  -- Update timer
   
   self.motion_timer = self.motion_timer + dt
   local time_progress = self.motion_timer / target.duration
   
-  if time_progress >= 1 then
-    if #self.motion_sequence > 2 then
-      -- There is a next point, glide to it
+  local is_the_end = time_progress >= 1 and #self.motion_sequence == 2
+  local is_gliding = time_progress >= 1 and #self.motion_sequence > 2
+
+  if is_the_end then
+      -- This was the last point,
+      -- so just align the position to the finish point
+      time_progress = 1
+  end
+
+  if is_gliding then
+      -- There is a next point,
+      -- so skip this motion update and
+      -- glide to the next motion segment
       local overtime = self.motion_timer - target.duration
 
       table.remove(self.motion_sequence, 1)
       self.motion_timer = nil
       
-      if not target.inout then
-        msg.post(self.motion_observer, hash 'motion_point', {
-          object = target.object,
-          checkpoint = target.checkpoint
-        })
-      end
+      local message = {
+        object = target.object,
+        checkpoint = target.checkpoint
+      }
+      msg.post(self.motion_observer, hash 'motion_point', message)
       
       start_motion(self)
       update_motion(self, overtime)
 
       return
-    else
-      -- This is the end, align to the finish point
-      time_progress = 1
-    end
   end
 
-  -- Speed and progress
+  -- Update speed and progress
   
   local path_progress
 
@@ -514,42 +547,31 @@ local function update_motion(self, dt)
     path_progress = 1
   end
 
-  -- Position
+  -- Update position
 
-  local position
+  local camera_position = target.bezier_path:uniform_position(path_progress)
   
-  if target.bezier_path then
-    position = target.bezier_path:uniform_position(path_progress)
+  self.position = camera_position
+  go.set_position(self.position, '.')
 
-    if self.is_debug then
-      debug_bezier_lines(self, target)
-    end
-  else
-    position = original.position + (target.position - original.position) * path_progress
-  end
-
-  go.set_position(position, '.')
-
-  -- Look
+  -- Update look
   
   local look_easing = operator.flight_look_easing(path_progress)
   self.look = operator.lerp(look_easing, original.look, target.look)
   self.look_target = self.look
   go.set('.', hash 'euler', self.look)
 
-  -- Zoom
+  -- Debug
 
-  local zoom_easing = operator.flight_zoom_easing(path_progress)
-  local zoom = operator.lerp(zoom_easing, original.zoom, target.zoom)
-  self.zoom = zoom
-  self.zoom_target = zoom
+  if self.is_debug then
+    debug_bezier_lines(self, target)
+  end
 
-  self.camera_position = vmath.vector3(0, 0, zoom)
-  go.set_position(self.camera_position, self.urls.camera)
+  -- Finish
 
-  -- Check for finishing
-
-  if time_progress == 1 and #self.motion_sequence == 2 then
+  if is_the_end then
+    uncollapse_zoom(self, target.zoom)
+  
     local observer = self.motion_observer
     stop_motion(self)
 
@@ -659,15 +681,15 @@ local function update_look(self, dt)
   camera_position = vmath.vector3(0, 0, zoom)
   
   if self.collision_check and zoom > 0 then
-    local ray_from = go.get_world_position('.')
-    local camera_sensor = vmath.vector3(0, 0, zoom_target + self.collision_distance)
+    local ray_from = self.position
+    local camera_sensor = vmath.vector3(0, 0, zoom + self.collision_distance)
 
     local world_rotation = go.get_world_rotation('.')
     local ray_to = ray_from + vmath.rotate(world_rotation, camera_sensor)
     local result = physics.raycast(ray_from, ray_to, operator.camera_collisions_groups)
 
     if result then
-      zoom = (zoom_target + self.collision_distance) * result.fraction - self.collision_distance
+      zoom = (zoom + self.collision_distance) * result.fraction - self.collision_distance
     end
   end
 
@@ -680,7 +702,7 @@ local function update_look(self, dt)
 
   if self.is_debug and zoom ~= 0 and not self.is_active then
     local line = { 
-      start_point = go.get_world_position('.'),
+      start_point = self.position,
       end_point = go.get_world_position(self.urls.camera),
       color = debug_colors.blue
     }
@@ -689,14 +711,6 @@ local function update_look(self, dt)
 
   self.zoom = zoom
   self.zoom_target = zoom_target
-end
-
-local function draw_debug_lines(self)
-  for _, line in ipairs(self.debug_lines) do
-    msg.post('@render:', hash 'draw_line', line)
-  end
-
-  self.debug_lines = { }
 end
 
 -- Lifecycle
@@ -743,6 +757,7 @@ function init(self)
   go.set(camera_component, hash 'far_z', self.camera_far_z)
 
   self.object = nil
+  self.position = go.get_world_position('.')
 
   self.is_debug = false
   self.debug_lines = { }
@@ -756,10 +771,13 @@ function init(self)
 end
 
 function update(self, dt)
+  if self.object then
+    update_position(self)
+  end
+
   if self.motion_timer then
     update_motion(self, dt)
   else
-    self.motion_speed = 0
     update_look(self, dt)
   end
 

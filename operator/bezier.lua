@@ -18,37 +18,53 @@ local function int_lerp(t, a, b)
   return a + (b - a) * t
 end
 
+local function linear_bezier(time, lerp, p1, p2)
+	local result = p1 == p2 and p1 or lerp(time, p1, p2)
+	return result
+end
+
 local function quad_bezier(time, lerp, p1, p2, p3)
-	local a = lerp(time, p1, p2)
-	local b = lerp(time, p2, p3)
-	local result = lerp(time, a, b)
+	local a = linear_bezier(time, lerp, p1, p2)
+	local b = linear_bezier(time, lerp, p2, p3)
+	local result = linear_bezier(time, lerp, a, b)
 	return result
 end
 
 local function cubic_bezier(time, lerp, p1, p2, p3, p4)
   local a = quad_bezier(time, lerp, p1, p2, p3)
   local b = quad_bezier(time, lerp, p2, p3, p4)
-	local result = lerp(time, a, b)
+	local result = linear_bezier(time, lerp, a, b)
 	return result
 end
+
+local bezier_funcs = {
+  [2] = linear_bezier,
+  [3] = quad_bezier,
+  [4] = cubic_bezier
+}
 
 -- Public
 
 function bezier.new(points, samples_count, length_func, lerp_func)
-  assert(#points >= 3 and #points <= 4, 'Only 3 or 4 bezier points supported.')
-  assert(points[1] ~= points[#points], 'No distance between the start and end points.')
+  assert(#points >= 2 and #points <= 4, 'Only 2-4 bezier points are supported.')
 
 	local self = setmetatable({ }, { __index = bezier })
   local is_integer = type(points[1]) == 'integer'
 
   self.length_func = length_func or (is_integer and int_length or vmath.length)
   self.lerp_func = lerp_func or (is_integer and int_lerp or vmath.lerp)
-  self.bezier_func = #points == 4 and cubic_bezier or quad_bezier
-
-  self.points = points
+  self.bezier_func = bezier_funcs[#points]
   self.samples = { }
 
-  local samples_count = (samples_count and samples_count >= 1) and samples_count or 1
+  self.origin = points[1]
+  self.points = { }
+  for index, point in ipairs(points) do
+    self.points[index] = point - self.origin
+  end
+
+  local samples_count = samples_count or 1
+  samples_count = (#points > 2 and samples_count > 1) and samples_count or 1
+
   local previous_position = points[1]
   local passed_length = 0
 
@@ -66,7 +82,7 @@ function bezier.new(points, samples_count, length_func, lerp_func)
 end
 
 function bezier.position(self, time)
-  return self.bezier_func(time, self.lerp_func, unpack(self.points))
+  return self.origin + self.bezier_func(time, self.lerp_func, unpack(self.points))
 end
 
 function bezier.uniform_position(self, time)

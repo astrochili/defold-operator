@@ -133,7 +133,7 @@ How much time in seconds needed to change the current zoom to the desired zoom a
 
 ### collision_check
 
-Checks a path from the camera to the operator anchor for the collisions and move it closer if necessary.
+Checks a path from the camera to the operator anchor for the collisions and moves it closer if necessary.
 
 ### collision_distance
 
@@ -406,19 +406,7 @@ local easing_linear = function(x) return x end
 operator.flight_look_easing = easing_linear
 ```
 
-### operator.flight_zoom_easing
-
-Easing function to update the camera zoom distance between motion points.
-
-```lua
--- set a ready to use easing function
-operator.flight_zoom_easing = operator.EASING_INOUT_QUAD
--- or use your own
-local easing_linear = function(x) return x end
-operator.flight_zoom_easing = easing_linear
-```
-
-### Included Easing Functions
+Included easing functions:
 
 - `operator.EASING_INOUT_SINE`
 - `operator.EASING_INOUT_CUBIC`

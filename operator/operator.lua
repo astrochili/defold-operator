@@ -90,7 +90,6 @@ end
 operator.camera_collisions_groups = { hash 'default' }
 operator.flight_bezier_samples_count = 32
 operator.flight_look_easing = operator.EASING_INOUT_QUAD
-operator.flight_zoom_easing = operator.EASING_INOUT_QUAD
 
 -- Private Properties
 
