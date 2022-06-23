@@ -764,10 +764,6 @@ function init(self)
 end
 
 function update(self, dt)
-  if self.object then
-    update_position(self)
-  end
-
   if self.motion_timer then
     update_motion(self, dt)
   else
@@ -776,6 +772,14 @@ function update(self, dt)
 
   if self.is_debug then
     draw_debug_lines(self)
+  end
+
+  msg.post('#', hash 'post_update')
+end
+
+function post_update(self)
+  if self.object then
+    update_position(self)
   end
 end
 
@@ -825,6 +829,8 @@ function on_message(self, message_id, message, sender)
     self.internal_control = message.is_enabled
   elseif message_id == hash 'manual_control' then
     handle_input(self, message)
+  elseif message_id == hash 'post_update' then
+    post_update(self)
   end
 end
 
