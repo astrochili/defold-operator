@@ -27,6 +27,43 @@ function operator.project_on_plane(plane_normal, v)
   return v - plane_normal * distance
 end
 
+function operator.quat_from_euler(euler)
+  local quat_x = vmath.quat_rotation_x(math.rad(euler.x))
+  local quat_y = vmath.quat_rotation_y(math.rad(euler.y))
+  local quat_z = vmath.quat_rotation_z(math.rad(euler.z))
+  return quat_z * quat_y * quat_x
+end
+
+function operator.euler_from_quat(quat)
+  local x, y, z, w = quat.x, quat.y, quat.z, quat.w
+		
+	local polus = 2 * (y * z - w * x)
+  local yaw, pitch, roll
+
+	if polus < 0.999 then
+		if polus > -0.999 then
+      yaw = -math.asin(polus)
+      pitch = math.atan2(2 * (x * z + w * y), 1 - 2 * (x * x + y * y))
+      roll = math.atan2(2 * (x * y + w * z), 1 - 2 * (x * x + z * z))
+		else
+      yaw = math.pi / 2
+      pitch = math.atan2(2 * (x * y - w * z), 1 - 2 * (y * y + z * z))
+      roll = 0
+		end
+	else
+    yaw = -math.pi / 2
+    pitch = math.atan2(-2 * (x * y - w * z), 1 - 2 * (y * y + z * z))
+    roll = 0
+	end
+
+  yaw = math.deg(yaw)
+  pitch = math.deg(pitch)  
+  roll = math.deg(roll)
+  
+  local euler = vmath.vector3(yaw, pitch, roll)
+  return euler
+end
+
 -- Easing
 
 operator.EASING_INOUT_SINE = function(x)

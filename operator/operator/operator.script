@@ -50,13 +50,6 @@ local debug_colors = {
   blue = vmath.vector4(0, 0, 1, 1)
 }
 
-local function quat_from_look(look)
-  local quat_x = vmath.quat_rotation_x(math.rad(look.x))
-  local quat_y = vmath.quat_rotation_y(math.rad(look.y))
-  local quat_z = vmath.quat_rotation_z(math.rad(look.z))
-  return quat_z * quat_y * quat_x
-end
-
 local function short_rotation_angle(original, target)
   local planned_rotation = target - original
   local nearest_angle = target
@@ -92,7 +85,7 @@ local function clamp_angle(angle, min, max)
 end
 
 local function camera_distance(look, zoom)
-  local look_quat = quat_from_look(look)
+  local look_quat = operator.quat_from_euler(look)
   local camera_distance = vmath.rotate(look_quat, vmath.vector3(0, 0, zoom))
   return camera_distance
 end
