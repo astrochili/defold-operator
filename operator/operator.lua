@@ -147,11 +147,11 @@ function operator.set_debug(is_debug)
   private.is_debug = is_debug
 
   for url, _ in pairs(private.operators) do
-    msg.post(url, hash 'debug', { is_debug = is_debug })
+    msg.post(url, hash 'debug', { is_enabled = is_debug })
   end
 
   for url, _ in pairs(private.checkpoints) do
-    msg.post(url, hash 'debug', { is_debug = is_debug })
+    msg.post(url, hash 'debug', { is_enabled = is_debug })
   end
 end
 
@@ -162,7 +162,7 @@ end
 -- Internal Functions
 
 function operator.did_init_operator(url)
-  msg.post(url, hash 'debug', { is_debug = private.is_debug })
+  msg.post(url, hash 'debug', { is_enabled = private.is_debug })
   private.operators[url] = true
 end
 
@@ -171,7 +171,7 @@ function operator.did_final_operator(url)
 end
 
 function operator.did_init_checkpoint(url)
-  msg.post(url, hash 'debug', { is_debug = private.is_debug })
+  msg.post(url, hash 'debug', { is_enabled = private.is_debug })
   private.checkpoints[url] = true
 end
 

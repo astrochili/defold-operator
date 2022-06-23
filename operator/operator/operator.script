@@ -377,7 +377,7 @@ local function follow_sequence(self, sequence, sender)
         bezier = go.get(checkpoint, 'bezier'),
       }
     else
-      -- Item is checkpoint table
+      -- Item is motion point
       point = {
         object = item.object,
         position = item.position or vmath.vector3(),
@@ -412,7 +412,7 @@ local function follow_point(self, point, sender)
     point = {
       object = object,
       position = point.position or vmath.vector3(),
-      look = point.look or vmath.vector3(),
+      look = point.look,
       zoom = point.zoom or self.zoom,
       speed = point.speed or 0,
       inout = point.inout or false,
@@ -811,7 +811,7 @@ end
 
 function on_message(self, message_id, message, sender)
   if message_id == hash 'debug' then
-    self.is_debug = message.is_debug
+    self.is_debug = message.is_enabled
     msg.post('camera#mesh', self.is_debug and hash('enable') or hash('disable'))
   elseif message_id == hash 'activate' then
     activate(self, true)

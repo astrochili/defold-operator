@@ -24,6 +24,6 @@ end
 
 function on_message(self, message_id, message, sender)
   if message_id == hash 'debug' then
-    msg.post('#mesh', message.is_debug and hash('enable') or hash('disable'))
+    msg.post('#mesh', message.is_enabled and hash('enable') or hash('disable'))
   end
 end
