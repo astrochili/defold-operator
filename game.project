@@ -3,7 +3,7 @@ include_dirs = operator
 
 [project]
 title = Operator
-version = 1.1
+version = 1.2
 dependencies#0 = https://github.com/indiesoftby/defold-pointer-lock/archive/1b5e05b94491bb7e041052990122dd846e1605a9.zip
 
 [bootstrap]

@@ -831,7 +831,7 @@ function on_message(self, message_id, message, sender)
     handle_input(self, message)
   elseif message_id == hash 'post_update' then
     post_update(self)
-  elseif message_id == hash 'walker_post_correction' then
+  elseif message_id == hash 'object_post_movement' then
     update_position(self)
   end
 end
