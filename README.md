@@ -1,6 +1,7 @@
-# Defold Camera Operator
+![logo](https://user-images.githubusercontent.com/4752473/173253156-043d31ac-fe48-43bb-b91a-1272feec80c2.jpg)
+[![buymeacoffee](https://user-images.githubusercontent.com/4752473/179627111-617b77b1-f900-4fac-9e03-df73994246ad.svg)](https://www.buymeacoffee.com/astrochili) [![yoomoney](https://user-images.githubusercontent.com/4752473/179627145-7b0fde31-9d1b-4050-933f-82ce3227c617.svg)](https://yoomoney.ru/to/410011261306506) [![twitter](https://user-images.githubusercontent.com/4752473/179627140-c8991473-c4c1-4d6a-9bb1-4dc2117b049f.svg)](https://twitter.com/astronachos) [![telegram](https://user-images.githubusercontent.com/4752473/179627134-0bdcf8a5-7826-4ed2-b8cd-06d0b9792422.svg)](https://t.me/astronachos)
 
-![](https://user-images.githubusercontent.com/4752473/173253156-043d31ac-fe48-43bb-b91a-1272feec80c2.jpg)
+# Defold Camera Operator
 
 ## Overview
 
@@ -10,18 +11,19 @@ Showing your player the level by flying around and finish the flight by smooth a
 
 This extension is not about rendering so you can use any render script that you want.
 
-[Play HTML5 demo](https://astronachos.com/defold/operator).
+🎮 [Play HTML5 demo](https://astronachos.com/defold/operator).
 
-[Discuss on the forum](https://forum.defold.com/t/operator-camera-movement-controller-for-3d-games/71094/3).
+💬 [Discuss on the forum](https://forum.defold.com/t/operator-camera-movement-controller-for-3d-games/71094/3).
 
 ## Features
 
-- Camera rotation and zooming by mouse controls.
-- External manual control by messages.
-- Following an object with avoiding obstacles.
-- Smart alignment to the ground slope.
-- Smooth movement along checkpoints using a bezier path.
-- Switching between multiple cameras.
+- [x] Camera rotation and zooming by mouse controls.
+- [x] External manual control by messages.
+- [x] Following an object with avoiding obstacles.
+- [x] Smart alignment to the ground slope.
+- [x] Smooth movement along checkpoints using a bezier path.
+- [x] Switching between multiple cameras.
+- [ ] Request by [adding an issue or contribute](https://github.com/astrochili/defold-operator/issues).
 
 ## Install
 
