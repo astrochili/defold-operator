@@ -15,6 +15,8 @@ This extension is not about rendering so you can use any render script that you 
 
 💬 [Discuss on the forum](https://forum.defold.com/t/operator-camera-movement-controller-for-3d-games/71094/3).
 
+🎁 Get [free blockout textures](https://github.com/astrochili/blockout-textures) used in the demo.
+
 ## Features
 
 - [x] Camera rotation and zooming by mouse controls.
