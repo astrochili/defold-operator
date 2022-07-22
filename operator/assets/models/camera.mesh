@@ -1,4 +1,4 @@
-material: "/render/materials/model.material"
+material: "/operator/assets/materials/operator.material"
 vertices: "/operator/assets/models/box.buffer"
 textures: "/operator/assets/textures/camera.png"
 primitive_type: PRIMITIVE_TRIANGLES
