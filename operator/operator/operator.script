@@ -160,8 +160,16 @@ local function handle_input(self, input)
   end
 
   if input.zoom and self.zoom_step ~= 0 and self.maximum.z > self.minimum.z then
-    local zoom_target = self.zoom_target + self.zoom_step * input.zoom
-    self.zoom_target = math.max(math.min(zoom_target, self.maximum.z), self.minimum.z)
+    if self.zoom_interrupted_by_obstacle and input.zoom < 0 then
+      self.zoom_target = self.zoom_interrupted_by_obstacle  
+    end
+
+    local trying_to_zoom_inside_obstacle = self.zoom_interrupted_by_obstacle and input.zoom > 0 
+
+    if not trying_to_zoom_inside_obstacle then
+      local zoom_target = self.zoom_target + self.zoom_step * input.zoom
+      self.zoom_target = math.max(math.min(zoom_target, self.maximum.z), self.minimum.z)
+    end
   end
   
   if input.vertical and self.look_vertical then
@@ -683,7 +691,12 @@ local function update_look(self, dt)
 
     if result then
       zoom = (zoom + self.collision_distance) * result.fraction - self.collision_distance
+      self.zoom_interrupted_by_obstacle = zoom
+    else
+      self.zoom_interrupted_by_obstacle = nil
     end
+  else
+    self.zoom_interrupted_by_obstacle = nil
   end
 
   -- Set camera position
