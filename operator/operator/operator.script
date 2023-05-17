@@ -28,8 +28,8 @@ go.property('inverted_vertical', false)
 go.property('minimum', vmath.vector3(-89, -360, 0))
 go.property('maximum', vmath.vector3(89, 360, 30))
 
-go.property('sensitivity', 0.7)
-go.property('smoothness', 0.1)
+go.property('sensitivity', 0.1)
+go.property('smoothness', 0.05)
 
 go.property('zoom', 0)
 go.property('zoom_step', 0.3)
@@ -796,13 +796,13 @@ function on_input(self, action_id, action)
     input.zoom = 1
   end
   
-  if action.dx and action.dy and not action_id then
+  if action.screen_dx and action.screen_dy and not action_id then
     if self.is_pointer_locked ~= pointer.locked then
       -- Skip the first mouse movement by cursor jumping because locking.
       self.is_pointer_locked = pointer.locked
     elseif pointer.locked then
-      input.horizontal = action.dx or 0
-      input.vertical = action.dy or 0
+      input.horizontal = action.screen_dx or 0
+      input.vertical = action.screen_dy or 0
     end
   end
 
