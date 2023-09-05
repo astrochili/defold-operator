@@ -14,6 +14,7 @@ local bezier = require 'operator.bezier'
 
 go.property('is_active', true)
 go.property('internal_control', true)
+go.property('pointer_lock', true)
 
 go.property('camera_fov', 75)
 go.property('camera_near_z', 0.1)
@@ -722,6 +723,10 @@ end
 -- Lifecycle
 
 function init(self)
+  if not self.pointer_lock then
+    go.set("#pointer_lock", "click_action_id", hash(""))
+  end
+
   self.urls = {
     this = msg.url('.'),
     camera = msg.url('camera')
