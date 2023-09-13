@@ -180,7 +180,7 @@ function operator.did_final_checkpoint(url)
 end
 
 function operator.did_activate_operator(url)
-  if private.active_operator then
+  if private.active_operator and private.active_operator ~= url then
     msg.post(private.active_operator, hash 'deactivate')
   end
 
