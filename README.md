@@ -49,6 +49,27 @@ Add `operator.collection` to your scene and configure its script properties in t
 1. Add `checkpoint.go` instances to your scene and configure their script properties in the editor.
 2. Post the [`follow_sequence`](#follow_sequence) message with an array of checkpoints to follow the sequence.
 
+## Troubleshooting
+
+### Jittering
+
+If the operator is following a moving object with a **physical body**, you may notice a jittering effect.
+
+The operator doesn't integrate into the hierarchy of the folowing object, so it requires to know the actual position of the object. For this purpose, make sure that the project settings correspond to the recommended settings for the game with 3D physics.
+
+```ini
+[physics]
+type = 3D
+use_fixed_timestep = 1
+max_fixed_timesteps = 1
+
+[display]
+update_frequency = 60
+
+[engine]
+fixed_update_frequency = 60
+```
+
 ## Operator Properties
 
 ### is_active
