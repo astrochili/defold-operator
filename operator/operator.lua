@@ -6,7 +6,18 @@
   MIT license. See LICENSE for details.
 --]]
 
+local hashes = require 'operator.hashes'
+
+-- Local
+
 local operator = { }
+
+local private = {
+  active_operator = nil,
+  checkpoints = { },
+  operators = { },
+  is_debug = false
+}
 
 -- Helpers
 
@@ -65,12 +76,12 @@ function operator.euler_from_quat(quat)
 end
 
 function operator.normalized_target_angle(original, target)
-  local planned_rotation = target - original
+  local planned_angle = target - original
   local nearest_angle = target
 
-  if planned_rotation > 180 then
+  if planned_angle > 180 then
     nearest_angle = target - 360
-  elseif planned_rotation < -180 then
+  elseif planned_angle < -180 then
     nearest_angle = target + 360
   end
 
@@ -78,11 +89,13 @@ function operator.normalized_target_angle(original, target)
 end
 
 function operator.normalized_target_euler(original, target)
-  local nearest_look = vmath.vector3(target)
-  nearest_look.x = operator.normalized_target_angle(original.x, target.x)
-  nearest_look.y = operator.normalized_target_angle(original.y, target.y)
-  nearest_look.z = operator.normalized_target_angle(original.z, target.z)
-  return nearest_look
+  local nearest_euler = vmath.vector3(target)
+
+  nearest_euler.x = operator.normalized_target_angle(original.x, target.x)
+  nearest_euler.y = operator.normalized_target_angle(original.y, target.y)
+  nearest_euler.z = operator.normalized_target_angle(original.z, target.z)
+
+  return nearest_euler
 end
 
 function operator.clamp_angle(angle, min, max)
@@ -98,7 +111,41 @@ function operator.clamp_angle(angle, min, max)
   return angle
 end
 
--- Easing
+-- Internal
+
+function operator.did_init_operator(url)
+  msg.post(url, hashes.debug, { is_enabled = private.is_debug })
+  private.operators[url] = true
+end
+
+function operator.did_final_operator(url)
+  private.operators[url] = nil
+end
+
+function operator.did_init_checkpoint(url)
+  msg.post(url, hashes.debug, { is_enabled = private.is_debug })
+  private.checkpoints[url] = true
+end
+
+function operator.did_final_checkpoint(url)
+  private.checkpoints[url] = nil
+end
+
+function operator.did_activate_operator(url)
+  if private.active_operator and private.active_operator ~= url then
+    msg.post(private.active_operator, hashes.deactivate)
+  end
+
+  private.active_operator = url
+end
+
+function operator.did_deactivate_operator(url)
+  if private.active_operator == url then
+    private.active_operator = nil
+  end
+end
+
+-- Public
 
 operator.EASING_INOUT_SINE = function(x)
   return -(math.cos(math.pi * x) - 1) / 2
@@ -156,22 +203,9 @@ operator.EASING_INOUT_EXPO = function(x)
   end
 end
 
--- Public Properties
-
-operator.camera_collisions_groups = { hash 'default' }
+operator.camera_collisions_groups = { hashes.default }
 operator.flight_bezier_samples_count = 32
 operator.flight_look_easing = operator.EASING_INOUT_QUAD
-
--- Private Properties
-
-local private = {
-  active_operator = nil,
-  checkpoints = { },
-  operators = { },
-  is_debug = false
-}
-
--- Public Functions
 
 function operator.get_active_operator()
   return private.active_operator
@@ -181,50 +215,16 @@ function operator.set_debug(is_debug)
   private.is_debug = is_debug
 
   for url, _ in pairs(private.operators) do
-    msg.post(url, hash 'debug', { is_enabled = is_debug })
+    msg.post(url, hashes.debug, { is_enabled = is_debug })
   end
 
   for url, _ in pairs(private.checkpoints) do
-    msg.post(url, hash 'debug', { is_enabled = is_debug })
+    msg.post(url, hashes.debug, { is_enabled = is_debug })
   end
 end
 
 function operator.is_debug()
   return private.is_debug
-end
-
--- Internal Functions
-
-function operator.did_init_operator(url)
-  msg.post(url, hash 'debug', { is_enabled = private.is_debug })
-  private.operators[url] = true
-end
-
-function operator.did_final_operator(url)
-  private.operators[url] = nil
-end
-
-function operator.did_init_checkpoint(url)
-  msg.post(url, hash 'debug', { is_enabled = private.is_debug })
-  private.checkpoints[url] = true
-end
-
-function operator.did_final_checkpoint(url)
-  private.checkpoints[url] = nil
-end
-
-function operator.did_activate_operator(url)
-  if private.active_operator and private.active_operator ~= url then
-    msg.post(private.active_operator, hash 'deactivate')
-  end
-
-  private.active_operator = url
-end
-
-function operator.did_deactivate_operator(url)
-  if private.active_operator == url then
-    private.active_operator = nil
-  end
 end
 
 return operator

@@ -9,6 +9,7 @@
 local pointer = require 'pointer_lock.pointer'
 local operator = require 'operator.operator'
 local bezier = require 'operator.bezier'
+local hashes = require 'operator.hashes'
 
 -- Properties
 
@@ -41,34 +42,17 @@ go.property('collision_distance', 0.3)
 
 go.property('ground_align_factor', 0.5)
 go.property('ground_align_smoothness', 0.5)
+go.property('follow_object_rotation', false)
 
 --
--- Helpers
+-- Debug
 
 local debug_colors = {
   red = vmath.vector4(1, 0, 0, 1),
   blue = vmath.vector4(0, 0, 1, 1)
 }
 
-local function camera_offset(look, zoom)
-  local look_quat = operator.quat_from_euler(look)
-  local camera_offset = vmath.rotate(look_quat, vmath.vector3(0, 0, zoom))
-  return camera_offset
-end
-
-local function move_motion_point_with_object(point, object_movement)
-  point.position = point.position + object_movement
-  point.camera_position = point.camera_position + object_movement
-
-  if point.bezier_path then
-    point.bezier_path.origin = point.bezier_path.origin + object_movement
-  end
-end
-
---
--- Debug
-
-local function debug_bezier_lines(self, target)
+local function update_debug_lines(self, target)
   for index = 1, #target.bezier_path.samples do
     local start_progress = (index - 1) / #target.bezier_path.samples
     local start_point = target.bezier_path:uniform_position(start_progress)
@@ -81,16 +65,34 @@ local function debug_bezier_lines(self, target)
       end_point = end_point,
       color = debug_colors.red
     }
+
     table.insert(self.debug_lines, line)
   end
 end
 
 local function draw_debug_lines(self)
-  for _, line in ipairs(self.debug_lines) do
-    msg.post('@render:', hash 'draw_line', line)
+  for index = #self.debug_lines, 1, -1 do
+    local line = table.remove(self.debug_lines, index)
+    msg.post('@render:', hashes.draw_line, line)
   end
+end
 
-  self.debug_lines = { }
+--
+-- Helpers
+
+local function camera_offset(look, zoom)
+  local look_quat = operator.quat_from_euler(look)
+  local camera_offset = vmath.rotate(look_quat, vmath.vector3(0, 0, zoom))
+  return camera_offset
+end
+
+local function update_motion_point_with_object(point, object_movement)
+  point.position = point.position + object_movement
+  point.camera_position = point.camera_position + object_movement
+
+  if point.bezier_path then
+    point.bezier_path.origin = point.bezier_path.origin + object_movement
+  end
 end
 
 --
@@ -102,18 +104,18 @@ local function activate(self, is_active)
   end
 
   if is_active then
-    msg.post('.', hash 'acquire_input_focus')
-    msg.post(self.urls.camera, hash 'acquire_camera_focus')
-    msg.post('@render:', hash 'use_camera_projection')
+    msg.post(self.urls.go, hashes.acquire_input_focus)
+    msg.post(self.urls.camera, hashes.acquire_camera_focus)
+    msg.post('@render:', hashes.use_camera_projection)
 
     self.is_active = true
-    operator.did_activate_operator(self.urls.this)
+    operator.did_activate_operator(self.urls.go)
   else
-    msg.post('.', hash 'release_input_focus')
-    msg.post(self.urls.camera, hash 'release_camera_focus')
+    msg.post(self.urls.go, hashes.release_input_focus)
+    msg.post(self.urls.camera, hashes.release_camera_focus)
 
     self.is_active = false
-    operator.did_deactivate_operator(self.urls.this)
+    operator.did_deactivate_operator(self.urls.go)
   end
 end
 
@@ -169,8 +171,9 @@ local function attach_to_object(self, object)
 
   self.object = object
   self.object_position = go.get_world_position(object)
+  self.object_euler = operator.euler_from_quat(go.get_world_rotation(object))
 
-  msg.post(object, hash 'operator_attached', { operator = self.urls.this })
+  msg.post(object, hashes.operator_attached, { operator = self.urls.go })
 end
 
 local function detach_from_object(self)
@@ -182,11 +185,12 @@ local function detach_from_object(self)
 
   self.object = nil
   self.object_position = nil
+  self.object_euler = nil
 
   self.ground_align = 0
   self.ground_align_target = 0
 
-  msg.post(object, hash 'operator_detached', { operator = self.urls.this })
+  msg.post(object, hashes.operator_detached, { operator = self.urls.go })
 end
 
 --
@@ -198,7 +202,7 @@ local function collapse_zoom(self)
   end
 
   self.position = self.position + camera_offset(self.look, self.zoom)
-  go.set_position(self.position, '.')
+  go.set_position(self.position, self.urls.go)
 
   self.camera_position = vmath.vector3()
   go.set_position(self.camera_position, self.urls.camera)
@@ -213,7 +217,7 @@ local function uncollapse_zoom(self, zoom)
     end
 
     self.position = self.position - camera_offset(self.look, zoom)
-    go.set_position(self.position, '.')
+    go.set_position(self.position, self.urls.go)
 
     self.camera_position = vmath.vector3(0, 0, zoom)
     go.set_position(self.camera_position, self.urls.camera)
@@ -230,7 +234,7 @@ local function stop_motion(self)
 
   if interrupt then
     if self.motion_observer then
-      msg.post(self.motion_observer, hash 'motion_interrupted')
+      msg.post(self.motion_observer, hashes.motion_interrupted)
     end
   end
 
@@ -260,7 +264,7 @@ local function start_motion(self, motion_sequence)
   end
 
   if target.object ~= nil then
-    move_motion_point_with_object(target, self.object_position)
+    update_motion_point_with_object(target, self.object_position)
   end
 
   -- Make a bezier path
@@ -336,9 +340,9 @@ local function follow_sequence(self, sequence, sender)
 
       local position = go.get_world_position(checkpoint)
       local object = go.get_parent(checkpoint)
-      local look = go.get(checkpoint, hash 'euler')
+      local look = go.get(checkpoint, hashes.euler)
 
-      checkpoint.fragment = hash 'checkpoint'
+      checkpoint.fragment = hashes.checkpoint
 
       point = {
         checkpoint = item,
@@ -428,24 +432,35 @@ end
 --
 -- Updating
 
-local function update_position(self)
+local function update_attachment_anchor(self)
+  if not self.object then
+    return
+  end
+
   local object_position = self.object_position
   self.object_position = go.get_world_position(self.object)
   local object_movement = self.object_position - object_position
 
-  if vmath.length(object_movement) == 0 then
-    return
+  if vmath.length(object_movement) ~= 0 then
+    local position = self.position + object_movement
+
+    if self.position ~= position then
+      self.position = position
+      go.set_position(self.position, self.urls.go)
+    end
   end
 
-  local position = self.position + object_movement
+  local object_euler = self.object_euler
+  self.object_euler = operator.euler_from_quat(go.get_world_rotation(self.object))
+  local object_rotating = self.object_euler - object_euler
 
-  if self.position ~= position then
-    self.position = position
-    go.set_position(self.position, '.')
+  if self.follow_object_rotation and vmath.length(object_rotating) ~= 0 then
+    self.look = self.look + object_rotating
+    self.look_target = self.look_target + object_rotating
   end
 
   for _, motion_point in ipairs(self.motion_sequence or { }) do
-    move_motion_point_with_object(motion_point, object_movement)
+    update_motion_point_with_object(motion_point, object_movement)
   end
 end
 
@@ -480,7 +495,7 @@ local function update_motion(self, dt)
         object = target.object,
         checkpoint = target.checkpoint
       }
-      msg.post(self.motion_observer, hash 'motion_point', message)
+      msg.post(self.motion_observer, hashes.motion_point, message)
 
       start_motion(self)
       update_motion(self, overtime)
@@ -519,19 +534,19 @@ local function update_motion(self, dt)
   local camera_position = target.bezier_path:uniform_position(path_progress)
 
   self.position = camera_position
-  go.set_position(self.position, '.')
+  go.set_position(self.position, self.urls.go)
 
   -- Update look
 
   local look_easing = operator.flight_look_easing(path_progress)
   self.look = operator.lerp(look_easing, original.look, target.look)
   self.look_target = self.look
-  go.set('.', hash 'euler', self.look)
+  go.set(self.urls.go, hashes.euler, self.look)
 
   -- Debug
 
   if self.is_debug then
-    debug_bezier_lines(self, target)
+    update_debug_lines(self, target)
   end
 
   -- Finish
@@ -542,7 +557,7 @@ local function update_motion(self, dt)
     local observer = self.motion_observer
     stop_motion(self)
 
-    msg.post(observer, hash 'motion_finished', {
+    msg.post(observer, hashes.motion_finished, {
       object = target.object,
       checkpoint = target.checkpoint
     })
@@ -621,7 +636,7 @@ local function update_look(self, dt)
   local euler = look + vmath.vector3(self.ground_align, 0, 0)
 
   if euler ~= self.euler then
-    go.set('.', hash 'euler', euler)
+    go.set(self.urls.go, hashes.euler, euler)
     self.euler = euler
   end
 
@@ -651,7 +666,7 @@ local function update_look(self, dt)
     local ray_from = self.position
     local camera_sensor = vmath.vector3(0, 0, zoom + self.collision_distance)
 
-    local world_rotation = go.get_world_rotation('.')
+    local world_rotation = go.get_world_rotation(self.urls.go)
     local ray_to = ray_from + vmath.rotate(world_rotation, camera_sensor)
     local result = physics.raycast(ray_from, ray_to, operator.camera_collisions_groups)
 
@@ -689,13 +704,14 @@ end
 
 function init(self)
   self.urls = {
-    this = msg.url('.'),
+    go = msg.url('.'),
+    this = msg.url('#'),
     camera = msg.url('camera')
   }
 
   self.bindings = {
-    zoom_in = hash 'mouse_wheel_up',
-    zoom_out = hash 'mouse_wheel_down',
+    zoom_in = hashes.mouse_wheel_up,
+    zoom_out = hashes.mouse_wheel_down,
   }
 
   self.is_pointer_locked = false
@@ -713,7 +729,7 @@ function init(self)
   self.motion_observer = nil
   self.motion_speed = 0
 
-  self.euler = go.get('.', hash 'euler')
+  self.euler = go.get(self.urls.go, hashes.euler)
   self.look = self.euler
   self.look_target = self.look
 
@@ -722,19 +738,19 @@ function init(self)
   go.set_position(self.camera_position, self.urls.camera)
 
   local camera_component = self.urls.camera
-  camera_component.fragment = hash 'camera'
+  camera_component.fragment = hashes.camera
 
-  go.set(camera_component, hash 'fov', math.rad(self.camera_fov))
-  go.set(camera_component, hash 'near_z', self.camera_near_z)
-  go.set(camera_component, hash 'far_z', self.camera_far_z)
+  go.set(camera_component, hashes.fov, math.rad(self.camera_fov))
+  go.set(camera_component, hashes.near_z, self.camera_near_z)
+  go.set(camera_component, hashes.far_z, self.camera_far_z)
 
   self.object = nil
-  self.position = go.get_world_position('.')
+  self.position = go.get_world_position(self.urls.go)
 
   self.is_debug = false
   self.debug_lines = { }
 
-  operator.did_init_operator(self.urls.this)
+  operator.did_init_operator(self.urls.go)
 
   if self.is_active then
     self.is_active = false
@@ -753,13 +769,11 @@ function update(self, dt)
     draw_debug_lines(self)
   end
 
-  msg.post('#', hash 'post_update')
+  msg.post(self.urls.this, hashes.post_update)
 end
 
 function post_update(self)
-  if self.object then
-    update_position(self)
-  end
+  update_attachment_anchor(self)
 end
 
 function on_input(self, action_id, action)
@@ -789,32 +803,32 @@ function on_input(self, action_id, action)
 end
 
 function on_message(self, message_id, message, sender)
-  if message_id == hash 'debug' then
+  if message_id == hashes.debug then
     self.is_debug = message.is_enabled
     msg.post('camera#mesh', self.is_debug and hash('enable') or hash('disable'))
-  elseif message_id == hash 'activate' then
+  elseif message_id == hashes.activate then
     activate(self, true)
-  elseif message_id == hash 'deactivate' then
+  elseif message_id == hashes.deactivate then
     activate(self, false)
-  elseif message_id == hash 'follow_sequence' then
+  elseif message_id == hashes.follow_sequence then
     follow_sequence(self, message, sender)
-  elseif message_id == hash 'follow_point' then
+  elseif message_id == hashes.follow_point then
     follow_point(self, message, sender)
-  elseif message_id == hash 'unfollow' then
+  elseif message_id == hashes.unfollow then
     unfollow(self)
-  elseif message_id == hash 'ground_normal' then
+  elseif message_id == hashes.ground_normal then
     did_update_ground_normal(self, message.normal)
-  elseif message_id == hash 'internal_control' then
+  elseif message_id == hashes.internal_control then
     self.internal_control = message.is_enabled
-  elseif message_id == hash 'manual_control' then
+  elseif message_id == hashes.manual_control then
     handle_input(self, message)
-  elseif message_id == hash 'post_update' then
+  elseif message_id == hashes.post_update then
     post_update(self)
-  elseif message_id == hash 'object_post_movement' then
-    update_position(self)
+  elseif message_id == hashes.object_post_movement then
+    update_attachment_anchor(self)
   end
 end
 
 function final(self)
-  operator.did_final_operator(self.urls.this)
+  operator.did_final_operator(self.urls.go)
 end

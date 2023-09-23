@@ -1,4 +1,5 @@
 local operator = require 'operator.operator'
+local hashes = require 'operator.hashes'
 
 -- Lifecycle
 
@@ -11,13 +12,13 @@ function init(self)
   }
 
   self.is_gui_enabled = true
-  msg.post('.', hash 'acquire_input_focus')
+  msg.post('.', hashes.acquire_input_focus)
   operator.set_debug(true)
 
   -- Prepare a car point
 
   self.car_point = {
-    object = self.urls.car, 
+    object = self.urls.car,
     look = vmath.vector3(-30, 0, 0),
     zoom = 3
   }
@@ -34,8 +35,8 @@ function init(self)
 
   -- Activate the operator 2
 
-  msg.post(self.urls.operator_2, hash 'activate')
-  msg.post(self.urls.operator_2, hash 'follow_sequence', self.flight_sequence)
+  msg.post(self.urls.operator_2, hashes.activate)
+  msg.post(self.urls.operator_2, hashes.follow_sequence, self.flight_sequence)
 end
 
 function on_input(self, action_id, action)
@@ -43,9 +44,9 @@ function on_input(self, action_id, action)
   -- Functional actions
 
   if action_id == hash 'key_1' and action.released then
-    msg.post(self.urls.operator_1, hash 'activate')
+    msg.post(self.urls.operator_1, hashes.activate)
   elseif action_id == hash 'key_2' and action.released then
-    msg.post(self.urls.operator_2, hash 'activate')
+    msg.post(self.urls.operator_2, hashes.activate)
   elseif action_id == hash 'key_h' and action.released then
     self.is_gui_enabled = not self.is_gui_enabled
     msg.post(self.urls.gui, self.is_gui_enabled and hash('enable') or hash('disable'))
@@ -70,10 +71,10 @@ function on_input(self, action_id, action)
   elseif action_id == hash 'key_z' then
     manual_control.zoom = -1
   end
-  
+
   if next(manual_control) then
     local active_operator = operator.get_active_operator()
-    msg.post(active_operator, hash 'manual_control', manual_control)
+    msg.post(active_operator, hashes.manual_control, manual_control)
   end
 end
 

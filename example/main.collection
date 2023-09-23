@@ -445,6 +445,11 @@ collection_instances {
         value: "25.0, 360.0, 30.0"
         type: PROPERTY_TYPE_VECTOR3
       }
+      properties {
+        id: "follow_object_rotation"
+        value: "true"
+        type: PROPERTY_TYPE_BOOLEAN
+      }
     }
   }
   scale3 {

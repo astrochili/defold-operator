@@ -6,11 +6,11 @@ local route = {
   { position = vmath.vector3(0, 2.25, 3), stop = true },
   { position = vmath.vector3(0, 2.25, -4), stop = true },
   { position = vmath.vector3(0, 0.5, -7), stop = true },
-  { position = vmath.vector3(0, 0.5, -18), stop = true },
+  { position = vmath.vector3(0, 0.5, -18), rotation = vmath.vector3(0, -90, 0), stop = true },
   { position = vmath.vector3(1, 0.5, -18) },
   { position = vmath.vector3(3, 2.0, -18) },
-  { position = vmath.vector3(16, 2.0, -18), stop = true },
-  { position = vmath.vector3(16, 2.0, -11), stop = true },
+  { position = vmath.vector3(16, 2.0, -18), rotation = vmath.vector3(0, -180, 0), stop = true },
+  { position = vmath.vector3(16, 2.0, -11), rotation = vmath.vector3(0, -270, 0), stop = true },
   { position = vmath.vector3(15, 2.0, -11)},
   { position = vmath.vector3(13, 0.5, -11)},
   { position = vmath.vector3(0, 0.5, -11), stop = true },
@@ -18,7 +18,7 @@ local route = {
   { position = vmath.vector3(-17, 0.5, -11), stop = true },
   { position = vmath.vector3(-21, 0.5, -11), stop = true },
   { position = vmath.vector3(-21, -1, -11) },
-  { position = vmath.vector3(0, -1, 25) },
+  { position = vmath.vector3(0, -1, 25), rotation = vmath.vector3(0, 0, 0), },
   { position = vmath.vector3(0, 0.5, 25), stop = true },
   { position = vmath.vector3(0, 0.5, 23), stop = true },
 }
@@ -47,7 +47,12 @@ local function drive_to_next(self)
     easing = go.EASING_OUTSINE
   end
 
+  if target.rotation then
+    go.animate('.', 'euler', go.PLAYBACK_ONCE_FORWARD, target.rotation, easing, duration, 0)
+  end
+
   go.animate('.', 'position', go.PLAYBACK_ONCE_FORWARD, target.position, easing, duration, 0, function()
+    go.cancel_animations('.')
     drive_to_next(self)
   end)
 

@@ -186,6 +186,10 @@ How much time in seconds needed to change the current ground alignment to the de
 
 Don't use low values to avoid sharp shakes due to the ground geometry.
 
+### follow_object_rotation
+
+Follow the rotation while following the object. Useful when you want to control the object rather than the camera. For example, a car.
+
 ## Activation Messages
 
 ### activate
@@ -219,7 +223,7 @@ There is two ways to create checkpoint:
 
 A point table have additional parameters `position` and `look`, which are the equivalents of `checkpoint.go` position, rotation.
 
-- `object` (optional, default is `nil`) - move the operrator in the local object coordinates. Use this to attach it to something moving, like a character.
+- `object` (optional, default is `nil`) - move the operator in the local object coordinates. Use this to attach it to something moving, like a character.
 - `position` (optional, default is `vmath.vector()`) - the operator anchor position.
 - `look` (optional, default is the previous point `look`) - the camera rotation.
 - `zoom` (optional, default is the previous point `zoom`) - the camera zoom distance.
