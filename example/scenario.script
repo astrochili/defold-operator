@@ -37,6 +37,7 @@ function init(self)
 
   msg.post(self.urls.operator_2, hashes.activate)
   msg.post(self.urls.operator_2, hashes.follow_sequence, self.flight_sequence)
+  msg.post(self.urls.gui, hash 'camera_did_change', { camera = 'CAMERA 2'})
 end
 
 function on_input(self, action_id, action)
@@ -45,8 +46,10 @@ function on_input(self, action_id, action)
 
   if action_id == hash 'key_1' and action.released then
     msg.post(self.urls.operator_1, hashes.activate)
+    msg.post(self.urls.gui, hash 'camera_did_change', { camera = 'CAMERA 1'})
   elseif action_id == hash 'key_2' and action.released then
     msg.post(self.urls.operator_2, hashes.activate)
+    msg.post(self.urls.gui, hash 'camera_did_change', { camera = 'CAMERA 2'})
   elseif action_id == hash 'key_h' and action.released then
     self.is_gui_enabled = not self.is_gui_enabled
     msg.post(self.urls.gui, self.is_gui_enabled and hash('enable') or hash('disable'))

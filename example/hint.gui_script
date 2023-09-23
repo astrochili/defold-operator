@@ -1,0 +1,9 @@
+function init(self)
+  self.camera_text = gui.get_node('camera_text')
+end
+
+function on_message(self, message_id, message, sender)
+  if message_id == hash 'camera_did_change' then
+    gui.set_text(self.camera_text, message.camera)
+  end
+end
