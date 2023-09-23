@@ -55,6 +55,12 @@ function on_input(self, action_id, action)
     msg.post(self.urls.gui, self.is_gui_enabled and hash('enable') or hash('disable'))
   elseif action_id == hash 'key_d' and action.released then
     operator.set_debug(not operator.is_debug())
+  elseif action_id == hash 'key_esc' and action.released then
+    msg.post(self.urls.operator_1, hashes.internal_control, { is_enabled = false })
+    msg.post(self.urls.operator_2, hashes.internal_control, { is_enabled = false })
+  elseif action_id == hash 'touch' and action.pressed then
+    msg.post(self.urls.operator_1, hashes.internal_control, { is_enabled = true })
+    msg.post(self.urls.operator_2, hashes.internal_control, { is_enabled = true })
   end
 
   -- Manual control

@@ -6,7 +6,6 @@
   MIT license. See LICENSE for details.
 --]]
 
-local pointer = require 'pointer_lock.pointer'
 local operator = require 'operator.operator'
 local bezier = require 'operator.bezier'
 local hashes = require 'operator.hashes'
@@ -714,8 +713,6 @@ function init(self)
     zoom_out = hashes.mouse_wheel_down,
   }
 
-  self.is_pointer_locked = false
-
   self.is_rotation_continious = {
     x = math.abs(self.minimum.x) + math.abs(self.maximum.x) >= 720,
     y = math.abs(self.minimum.y) + math.abs(self.maximum.y) >= 720
@@ -790,12 +787,12 @@ function on_input(self, action_id, action)
   end
 
   if action.screen_dx and action.screen_dy and not action_id then
-    if self.is_pointer_locked ~= pointer.locked then
-      -- Skip the first mouse movement by cursor jumping because locking.
-      self.is_pointer_locked = pointer.locked
-    elseif pointer.locked then
+    if self.did_initial_screen_movement then
       input.horizontal = action.screen_dx or 0
       input.vertical = action.screen_dy or 0
+    else
+      -- Skip the first mouse movement to avoid cursor jumping after locking.
+      self.did_initial_screen_movement = true
     end
   end
 
@@ -820,6 +817,7 @@ function on_message(self, message_id, message, sender)
     did_update_ground_normal(self, message.normal)
   elseif message_id == hashes.internal_control then
     self.internal_control = message.is_enabled
+    self.did_initial_screen_movement = false
   elseif message_id == hashes.manual_control then
     handle_input(self, message)
   elseif message_id == hashes.post_update then

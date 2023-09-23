@@ -39,7 +39,9 @@ This extension is not about rendering so you can use any render script that you 
 
 ## Install
 
-Add links to the zip-archives of the latest versions of [defold-operator](https://github.com/astrochili/defold-operator/releases) and [defold-pointer-lock](https://github.com/indiesoftby/defold-pointer-lock) to your Defold project as [dependencies](http://www.defold.com/manuals/libraries/).
+Add links to the zip-archive of the latest versions of [defold-operator](https://github.com/astrochili/defold-operator/releases) to your Defold project as [dependencies](http://www.defold.com/manuals/libraries/).
+
+If you plan to lock the cursor pointer, add a link to the latest version of [defold-pointer-lock](https://github.com/indiesoftby/defold-pointer-lock).
 
 ## Quick Start
 
@@ -56,6 +58,17 @@ Add `operator.collection` to your scene and configure its script properties in t
 2. Post the [`follow_sequence`](#follow_sequence) message with an array of checkpoints to follow the sequence.
 
 ## Troubleshooting
+
+### Cursor Locking
+
+Operator doesn't provide cursor locking functionality. To lock the cursor use the [defold-pointer-lock](https://github.com/indiesoftby/defold-pointer-lock) extension.
+
+To get more control and avoid camera rotation jumps, disable the [internal control](#internal_control-1) when the cursor is not locked and enable it when the cursor is locked. There are two ways to do it at the moment:
+
+- Observe the `pointer.locked` value in the update cycle.
+- Listen to the same input action ids. This variant is implemented in the example project.
+
+Watch [defold-pointer-lock/issues/3](https://github.com/indiesoftby/defold-pointer-lock/issues/3) for updates.
 
 ### Jittering
 
@@ -495,6 +508,6 @@ Returns a classic position along the bezier.
 
 Returns an uniform position along the bezier. The accuracy depends of `samples_count`.
 
-## Dependences
+## Credits
 
-- [defold-pointer-lock](https://github.com/indiesoftby/defold-pointer-lock) by Artsiom Trubchyk ([@aglitchman](https://github.com/aglitchman)).
+- [Pointer Lock](https://github.com/indiesoftby/defold-pointer-lock) by Artsiom Trubchyk ([@aglitchman](https://github.com/aglitchman)) used in the demo.

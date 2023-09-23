@@ -414,6 +414,11 @@ collection_instances {
         value: "false"
         type: PROPERTY_TYPE_BOOLEAN
       }
+      properties {
+        id: "internal_control"
+        value: "false"
+        type: PROPERTY_TYPE_BOOLEAN
+      }
     }
   }
   scale3 {
@@ -440,6 +445,11 @@ collection_instances {
     id: "operator"
     properties {
       id: "operator"
+      properties {
+        id: "internal_control"
+        value: "false"
+        type: PROPERTY_TYPE_BOOLEAN
+      }
       properties {
         id: "maximum"
         value: "25.0, 360.0, 30.0"
@@ -494,6 +504,28 @@ embedded_instances {
   "    y: 0.0\n"
   "    z: 0.0\n"
   "    w: 1.0\n"
+  "  }\n"
+  "  property_decls {\n"
+  "  }\n"
+  "}\n"
+  "components {\n"
+  "  id: \"pointer_lock\"\n"
+  "  component: \"/pointer_lock/pointer_lock.script\"\n"
+  "  position {\n"
+  "    x: 0.0\n"
+  "    y: 0.0\n"
+  "    z: 0.0\n"
+  "  }\n"
+  "  rotation {\n"
+  "    x: 0.0\n"
+  "    y: 0.0\n"
+  "    z: 0.0\n"
+  "    w: 1.0\n"
+  "  }\n"
+  "  properties {\n"
+  "    id: \"acquire_input_focus\"\n"
+  "    value: \"false\"\n"
+  "    type: PROPERTY_TYPE_BOOLEAN\n"
   "  }\n"
   "  property_decls {\n"
   "  }\n"
