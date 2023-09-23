@@ -36,7 +36,7 @@ end
 
 function operator.euler_from_quat(quat)
   local x, y, z, w = quat.x, quat.y, quat.z, quat.w
-		
+
 	local polus = 2 * (y * z - w * x)
   local yaw, pitch, roll
 
@@ -57,11 +57,45 @@ function operator.euler_from_quat(quat)
 	end
 
   yaw = math.deg(yaw)
-  pitch = math.deg(pitch)  
+  pitch = math.deg(pitch)
   roll = math.deg(roll)
-  
+
   local euler = vmath.vector3(yaw, pitch, roll)
   return euler
+end
+
+function operator.normalized_target_angle(original, target)
+  local planned_rotation = target - original
+  local nearest_angle = target
+
+  if planned_rotation > 180 then
+    nearest_angle = target - 360
+  elseif planned_rotation < -180 then
+    nearest_angle = target + 360
+  end
+
+  return nearest_angle
+end
+
+function operator.normalized_target_euler(original, target)
+  local nearest_look = vmath.vector3(target)
+  nearest_look.x = operator.normalized_target_angle(original.x, target.x)
+  nearest_look.y = operator.normalized_target_angle(original.y, target.y)
+  nearest_look.z = operator.normalized_target_angle(original.z, target.z)
+  return nearest_look
+end
+
+function operator.clamp_angle(angle, min, max)
+  local angle = angle
+
+  if angle < -360 then
+    angle = angle + 360
+  elseif angle > 360 then
+    angle = angle - 360
+  end
+
+  angle = math.min(math.max(angle, min), max)
+  return angle
 end
 
 -- Easing
@@ -134,7 +168,7 @@ local private = {
   active_operator = nil,
   checkpoints = { },
   operators = { },
-  is_debug = false  
+  is_debug = false
 }
 
 -- Public Functions

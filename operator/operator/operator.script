@@ -50,44 +50,10 @@ local debug_colors = {
   blue = vmath.vector4(0, 0, 1, 1)
 }
 
-local function short_rotation_angle(original, target)
-  local planned_rotation = target - original
-  local nearest_angle = target
-
-  if planned_rotation > 180 then
-    nearest_angle = target - 360
-  elseif planned_rotation < -180 then
-    nearest_angle = target + 360
-  end
-
-  return nearest_angle
-end
-
-local function short_rotation_look(original, target)
-  local nearest_look = vmath.vector3(target)
-  nearest_look.x = short_rotation_angle(original.x, target.x)
-  nearest_look.y = short_rotation_angle(original.y, target.y)
-  nearest_look.z = short_rotation_angle(original.z, target.z)
-  return nearest_look
-end
-
-local function clamp_angle(angle, min, max)
-  local angle = angle
-
-  if angle < -360 then
-    angle = angle + 360
-  elseif angle > 360 then
-    angle = angle - 360
-  end
-
-  angle = math.min(math.max(angle, min), max)
-  return angle
-end
-
-local function camera_distance(look, zoom)
+local function camera_offset(look, zoom)
   local look_quat = operator.quat_from_euler(look)
-  local camera_distance = vmath.rotate(look_quat, vmath.vector3(0, 0, zoom))
-  return camera_distance
+  local camera_offset = vmath.rotate(look_quat, vmath.vector3(0, 0, zoom))
+  return camera_offset
 end
 
 local function move_motion_point_with_object(point, object_movement)
@@ -178,7 +144,7 @@ local function handle_input(self, input)
     self.look_target.x = self.look_target.x - movement
 
     if not self.is_rotation_continious.x then
-      self.look_target.x = clamp_angle(self.look_target.x, self.minimum.x, self.maximum.x)
+      self.look_target.x = operator.clamp_angle(self.look_target.x, self.minimum.x, self.maximum.x)
     end
   end
 
@@ -188,7 +154,7 @@ local function handle_input(self, input)
     self.look_target.y = self.look_target.y + movement
 
     if not self.is_rotation_continious.y then
-      self.look_target.y = clamp_angle(self.look_target.y, self.minimum.y, self.maximum.y)
+      self.look_target.y = operator.clamp_angle(self.look_target.y, self.minimum.y, self.maximum.y)
     end
   end
 end
@@ -203,7 +169,7 @@ local function attach_to_object(self, object)
 
   self.object = object
   self.object_position = go.get_world_position(object)
-  
+
   msg.post(object, hash 'operator_attached', { operator = self.urls.this })
 end
 
@@ -231,7 +197,7 @@ local function collapse_zoom(self)
     return
   end
 
-  self.position = self.position + camera_distance(self.look, self.zoom)
+  self.position = self.position + camera_offset(self.look, self.zoom)
   go.set_position(self.position, '.')
 
   self.camera_position = vmath.vector3()
@@ -246,7 +212,7 @@ local function uncollapse_zoom(self, zoom)
       return
     end
 
-    self.position = self.position - camera_distance(self.look, zoom)
+    self.position = self.position - camera_offset(self.look, zoom)
     go.set_position(self.position, '.')
 
     self.camera_position = vmath.vector3(0, 0, zoom)
@@ -397,8 +363,8 @@ local function follow_sequence(self, sequence, sender)
       }
     end
 
-    point.look = short_rotation_look(previous_point.look, point.look)
-    point.camera_position = point.position + camera_distance(point.look, point.zoom)
+    point.look = operator.normalized_target_euler(previous_point.look, point.look)
+    point.camera_position = point.position + camera_offset(point.look, point.zoom)
 
     table.insert(motion_sequence, point)
     previous_point = point
@@ -641,13 +607,13 @@ local function update_look(self, dt)
   }
 
   if out_of.x and math.abs(looking.x) < 360 then
-    look.x = clamp_angle(look.x, self.minimum.x, self.maximum.x)
-    look_target.x = clamp_angle(look_target.x, self.minimum.x, self.maximum.x)
+    look.x = operator.clamp_angle(look.x, self.minimum.x, self.maximum.x)
+    look_target.x = operator.clamp_angle(look_target.x, self.minimum.x, self.maximum.x)
   end
 
   if out_of.y and math.abs(looking.y) < 360 then
-    look.y = clamp_angle(look.y, self.minimum.y, self.maximum.y)
-    look_target.y = clamp_angle(look_target.y, self.minimum.y, self.maximum.y)
+    look.y = operator.clamp_angle(look.y, self.minimum.y, self.maximum.y)
+    look_target.y = operator.clamp_angle(look_target.y, self.minimum.y, self.maximum.y)
   end
 
   -- Set rotation
