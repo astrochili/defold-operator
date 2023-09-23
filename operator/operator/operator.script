@@ -110,7 +110,7 @@ local function debug_bezier_lines(self, target)
     local end_pregress = index / #target.bezier_path.samples
     local end_point = target.bezier_path:uniform_position(end_pregress)
 
-    local line = { 
+    local line = {
       start_point = start_point,
       end_point = end_point,
       color = debug_colors.red
@@ -145,7 +145,7 @@ local function activate(self, is_active)
   else
     msg.post('.', hash 'release_input_focus')
     msg.post(self.urls.camera, hash 'release_camera_focus')
-    
+
     self.is_active = false
     operator.did_deactivate_operator(self.urls.this)
   end
@@ -161,17 +161,17 @@ local function handle_input(self, input)
 
   if input.zoom and self.zoom_step ~= 0 and self.maximum.z > self.minimum.z then
     if self.zoom_interrupted_by_obstacle and input.zoom < 0 then
-      self.zoom_target = self.zoom_interrupted_by_obstacle  
+      self.zoom_target = self.zoom_interrupted_by_obstacle
     end
 
-    local trying_to_zoom_inside_obstacle = self.zoom_interrupted_by_obstacle and input.zoom > 0 
+    local trying_to_zoom_inside_obstacle = self.zoom_interrupted_by_obstacle and input.zoom > 0
 
     if not trying_to_zoom_inside_obstacle then
       local zoom_target = self.zoom_target + self.zoom_step * input.zoom
       self.zoom_target = math.max(math.min(zoom_target, self.maximum.z), self.minimum.z)
     end
   end
-  
+
   if input.vertical and self.look_vertical then
     local movement = input.vertical * self.sensitivity
     movement = self.inverted_vertical and movement or -movement
@@ -216,7 +216,7 @@ local function detach_from_object(self)
 
   self.object = nil
   self.object_position = nil
-  
+
   self.ground_align = 0
   self.ground_align_target = 0
 
@@ -230,7 +230,7 @@ local function collapse_zoom(self)
   if self.zoom == 0 then
     return
   end
-  
+
   self.position = self.position + camera_distance(self.look, self.zoom)
   go.set_position(self.position, '.')
 
@@ -280,14 +280,14 @@ local function start_motion(self, motion_sequence)
 
   local original = motion_sequence[1]
   local target = motion_sequence[2]
-  
+
   -- Sync attached and detached states
-  
+
   if original.object ~= target.object then
     if original.object ~= nil then
       detach_from_object(self)
     end
-    
+
     if target.object ~= nil then
       attach_to_object(self, target.object)
     end
@@ -296,7 +296,7 @@ local function start_motion(self, motion_sequence)
   if target.object ~= nil then
     move_motion_point_with_object(target, self.object_position)
   end
-  
+
   -- Make a bezier path
 
   local path_points = { original.camera_position }
@@ -335,7 +335,7 @@ local function start_motion(self, motion_sequence)
   local average_speed = (original_speed + target.speed) / 2
   local duration = average_speed > 0 and distance / average_speed or 0
   target.duration = duration
-  
+
   self.motion_timer = 0
 end
 
@@ -343,7 +343,7 @@ local function follow_sequence(self, sequence, sender)
   if self.motion_sequence then
     stop_motion(self)
   end
-  
+
   -- Starting point
 
   collapse_zoom(self)
@@ -371,7 +371,7 @@ local function follow_sequence(self, sequence, sender)
       local position = go.get_world_position(checkpoint)
       local object = go.get_parent(checkpoint)
       local look = go.get(checkpoint, hash 'euler')
-      
+
       checkpoint.fragment = hash 'checkpoint'
 
       point = {
@@ -399,7 +399,7 @@ local function follow_sequence(self, sequence, sender)
 
     point.look = short_rotation_look(previous_point.look, point.look)
     point.camera_position = point.position + camera_distance(point.look, point.zoom)
-    
+
     table.insert(motion_sequence, point)
     previous_point = point
   end
@@ -446,7 +446,7 @@ local function did_update_ground_normal(self, ground_normal)
 
   local vector_up = vmath.vector3(0, 1, 0)
   local ground_normal = ground_normal or vector_up
-  
+
   local quat_y = vmath.quat_rotation_y(math.rad(self.look.y))
   local camera_plane_direction = vmath.rotate(quat_y, vmath.vector3(0, 0, -1))
   local ground_normal_direction = operator.project_on_plane(vector_up, ground_normal)
@@ -454,7 +454,7 @@ local function did_update_ground_normal(self, ground_normal)
   if vmath.length(ground_normal_direction) > 0 then
     ground_normal_direction = vmath.normalize(ground_normal_direction)
   end
-  
+
   local camera_direction_factor = 1 - vmath.length(camera_plane_direction + ground_normal_direction)
   self.ground_align_target = operator.angle_between(vector_up, ground_normal) * camera_direction_factor * self.ground_align_factor
 end
@@ -486,12 +486,12 @@ end
 local function update_motion(self, dt)
   local original = self.motion_sequence[1]
   local target = self.motion_sequence[2]
-  
+
   -- Update timer
-  
+
   self.motion_timer = self.motion_timer + dt
   local time_progress = self.motion_timer / target.duration
-  
+
   local is_the_end = time_progress >= 1 and #self.motion_sequence == 2
   local is_gliding = time_progress >= 1 and #self.motion_sequence > 2
 
@@ -509,13 +509,13 @@ local function update_motion(self, dt)
 
       table.remove(self.motion_sequence, 1)
       self.motion_timer = nil
-      
+
       local message = {
         object = target.object,
         checkpoint = target.checkpoint
       }
       msg.post(self.motion_observer, hash 'motion_point', message)
-      
+
       start_motion(self)
       update_motion(self, overtime)
 
@@ -523,7 +523,7 @@ local function update_motion(self, dt)
   end
 
   -- Update speed and progress
-  
+
   local path_progress
 
   if original.speed > 0 or target.speed > 0 then
@@ -543,7 +543,7 @@ local function update_motion(self, dt)
       self.motion_speed = operator.lerp(time_progress, starting_speed, target.speed)
       local avarage_speed = (starting_speed + self.motion_speed) / 2
       path_progress = avarage_speed * time_progress * target.duration / target.distance
-    end    
+    end
   else
     path_progress = 1
   end
@@ -551,12 +551,12 @@ local function update_motion(self, dt)
   -- Update position
 
   local camera_position = target.bezier_path:uniform_position(path_progress)
-  
+
   self.position = camera_position
   go.set_position(self.position, '.')
 
   -- Update look
-  
+
   local look_easing = operator.flight_look_easing(path_progress)
   self.look = operator.lerp(look_easing, original.look, target.look)
   self.look_target = self.look
@@ -572,7 +572,7 @@ local function update_motion(self, dt)
 
   if is_the_end then
     uncollapse_zoom(self, target.zoom)
-  
+
     local observer = self.motion_observer
     stop_motion(self)
 
@@ -586,7 +586,7 @@ end
 local function update_look(self, dt)
   local look = vmath.vector3(self.look)
   local zoom = self.zoom
-  
+
   local look_target = vmath.vector3(self.look_target)
   local zoom_target = self.zoom_target
 
@@ -614,11 +614,11 @@ local function update_look(self, dt)
     if self.ground_align_smoothness > 0 then
       smooth_alignment = alignment * 1 / self.ground_align_smoothness * dt
     end
-  
+
     if math.abs(smooth_alignment) > math.abs(alignment) then
       smooth_alignment = alignment
     end
-  
+
     self.ground_align = self.ground_align + smooth_alignment
   end
 
@@ -627,11 +627,11 @@ local function update_look(self, dt)
   local too = {
     positive = {
       x = look.x > self.maximum.x and look_target.x > self.maximum.x,
-      y = look.y > self.maximum.y and look_target.y > self.maximum.y  
+      y = look.y > self.maximum.y and look_target.y > self.maximum.y
     },
     negative = {
       x = look.x < self.minimum.x and look_target.x < self.minimum.x,
-      y = look.y < self.minimum.y and look_target.y < self.minimum.y  
+      y = look.y < self.minimum.y and look_target.y < self.minimum.y
     }
   }
 
@@ -642,12 +642,12 @@ local function update_look(self, dt)
 
   if out_of.x and math.abs(looking.x) < 360 then
     look.x = clamp_angle(look.x, self.minimum.x, self.maximum.x)
-    look_target.x = clamp_angle(look_target.x, self.minimum.x, self.maximum.x)  
+    look_target.x = clamp_angle(look_target.x, self.minimum.x, self.maximum.x)
   end
 
   if out_of.y and math.abs(looking.y) < 360 then
     look.y = clamp_angle(look.y, self.minimum.y, self.maximum.y)
-    look_target.y = clamp_angle(look_target.y, self.minimum.y, self.maximum.y)  
+    look_target.y = clamp_angle(look_target.y, self.minimum.y, self.maximum.y)
   end
 
   -- Set rotation
@@ -658,19 +658,19 @@ local function update_look(self, dt)
     go.set('.', hash 'euler', euler)
     self.euler = euler
   end
-  
+
   self.look = look
   self.look_target = look_target
 
   -- Calculate zoom
-  
+
   local zooming = zoom_target - zoom
   local smooth_zooming = zooming
 
   if self.zoom_smoothness > 0 then
     smooth_zooming = zooming * 1 / self.zoom_smoothness * dt
   end
-  
+
   if math.abs(smooth_zooming) > math.abs(zooming) then
     smooth_zooming = zooming
   end
@@ -680,7 +680,7 @@ local function update_look(self, dt)
   -- Collision check
 
   camera_position = vmath.vector3(0, 0, zoom)
-  
+
   if self.collision_check and zoom > 0 then
     local ray_from = self.position
     local camera_sensor = vmath.vector3(0, 0, zoom + self.collision_distance)
@@ -707,7 +707,7 @@ local function update_look(self, dt)
   end
 
   if self.is_debug and zoom ~= 0 and not self.is_active then
-    local line = { 
+    local line = {
       start_point = self.position,
       end_point = go.get_world_position(self.urls.camera),
       color = debug_colors.blue
@@ -757,7 +757,7 @@ function init(self)
 
   local camera_component = self.urls.camera
   camera_component.fragment = hash 'camera'
-  
+
   go.set(camera_component, hash 'fov', math.rad(self.camera_fov))
   go.set(camera_component, hash 'near_z', self.camera_near_z)
   go.set(camera_component, hash 'far_z', self.camera_far_z)
@@ -808,7 +808,7 @@ function on_input(self, action_id, action)
   elseif action_id == self.bindings.zoom_out then
     input.zoom = 1
   end
-  
+
   if action.screen_dx and action.screen_dy and not action_id then
     if self.is_pointer_locked ~= pointer.locked then
       -- Skip the first mouse movement by cursor jumping because locking.
