@@ -61,14 +61,9 @@ Add `operator.collection` to your scene and configure its script properties in t
 
 ### Cursor Locking
 
-Operator doesn't provide cursor locking functionality. To lock the cursor use the [defold-pointer-lock](https://github.com/indiesoftby/defold-pointer-lock) extension.
+Operator doesn't provide cursor locking functionality. To lock the cursor use the [window.set_mouse_lock()](https://defold.com/ref/beta/window/#window.set_mouse_lock:flag) method or look at the [defold-pointer-lock](https://github.com/indiesoftby/defold-pointer-lock) extension.
 
-To get more control and avoid camera rotation jumps, disable the [internal control](#internal_control-1) when the cursor is not locked and enable it when the cursor is locked. There are two ways to do it at the moment:
-
-- Observe the `pointer.locked` value in the update cycle.
-- Listen to the same input action ids. This variant is implemented in the example project.
-
-Watch [defold-pointer-lock/issues/3](https://github.com/indiesoftby/defold-pointer-lock/issues/3) for updates.
+To get more control and avoid camera rotation jumps, disable the [internal control](#internal_control-1) when the cursor is not locked and enable it when the cursor is locked.
 
 ### Jittering
 
