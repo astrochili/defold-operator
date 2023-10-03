@@ -11,7 +11,7 @@
 
 📼 Also in this series:
 - 👖 [Kinematic Walker](https://github.com/astrochili/defold-kinematic-walker)
-- 🏗️ [TrenchBroom](https://github.com/astrochili/defold-trenchbroom)
+- 🏗️ [TrenchFold](https://github.com/astrochili/defold-trenchfold)
 - 🎄 [Illumination](https://github.com/astrochili/defold-illumination)
 - 🚧 [Blockout Textures](https://github.com/astrochili/blockout-textures)
 
