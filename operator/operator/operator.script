@@ -769,7 +769,7 @@ function update(self, dt)
   msg.post(self.urls.this, hashes.post_update)
 end
 
-function post_update(self)
+local function post_update(self)
   update_attachment_anchor(self)
 end
 
