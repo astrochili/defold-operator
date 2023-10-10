@@ -94,7 +94,7 @@ function bezier.uniform_position(self, time)
     if sample >= desired_length then
       local previous_sample = self.samples[index - 1] or 0
       local previous_time = (index - 1) / #self.samples
-      
+
       local current_time = index / #self.samples
 
       local sample_distance = sample - previous_sample

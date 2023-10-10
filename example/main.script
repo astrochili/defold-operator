@@ -1,6 +1,15 @@
+--[[
+  main.script
+  github.com/astrochili/defold-operator
+
+  Copyright (c) 2022 Roman Silin
+  MIT license. See LICENSE for details.
+--]]
+
 local operator = require 'operator.operator'
 local hashes = require 'operator.hashes'
 
+--
 -- Lifecycle
 
 function init(self)
@@ -89,6 +98,6 @@ end
 
 function on_message(self, message_id, message)
   if message_id == hash 'road_is_over' then
-    msg.post(self.urls.operator_2, 'follow_sequence', self.flight_sequence)
+    msg.post(self.urls.operator_2, hashes.follow_sequence, self.flight_sequence)
   end
 end

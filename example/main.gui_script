@@ -1,3 +1,14 @@
+--[[
+  main.gui_script
+  github.com/astrochili/defold-operator
+
+  Copyright (c) 2022 Roman Silin
+  MIT license. See LICENSE for details.
+--]]
+
+--
+-- Lifecycle
+
 function init(self)
   self.camera_text = gui.get_node('camera_text')
 end

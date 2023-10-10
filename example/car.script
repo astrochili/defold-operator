@@ -1,28 +1,14 @@
--- Route
+--[[
+  car.script
+  github.com/astrochili/defold-operator
 
-local route = {
-  { position = vmath.vector3(0, 0.5, 23), stop = true },
-  { position = vmath.vector3(0, 0.5, 6), stop = true },
-  { position = vmath.vector3(0, 2.25, 3), stop = true },
-  { position = vmath.vector3(0, 2.25, -4), stop = true },
-  { position = vmath.vector3(0, 0.5, -7), stop = true },
-  { position = vmath.vector3(0, 0.5, -18), rotation = vmath.vector3(0, -90, 0), stop = true },
-  { position = vmath.vector3(1, 0.5, -18) },
-  { position = vmath.vector3(3, 2.0, -18) },
-  { position = vmath.vector3(16, 2.0, -18), rotation = vmath.vector3(0, -180, 0), stop = true },
-  { position = vmath.vector3(16, 2.0, -11), rotation = vmath.vector3(0, -270, 0), stop = true },
-  { position = vmath.vector3(15, 2.0, -11)},
-  { position = vmath.vector3(13, 0.5, -11)},
-  { position = vmath.vector3(0, 0.5, -11), stop = true },
-  { position = vmath.vector3(-7, 0.5, -11), stop = true },
-  { position = vmath.vector3(-17, 0.5, -11), stop = true },
-  { position = vmath.vector3(-21, 0.5, -11), stop = true },
-  { position = vmath.vector3(-21, -1, -11) },
-  { position = vmath.vector3(0, -1, 25), rotation = vmath.vector3(0, 0, 0), },
-  { position = vmath.vector3(0, 0.5, 25), stop = true },
-  { position = vmath.vector3(0, 0.5, 23), stop = true },
-}
+  Copyright (c) 2022 Roman Silin
+  MIT license. See LICENSE for details.
+--]]
 
+local hashes = require 'operator.hashes'
+
+--
 -- Local
 
 local function drive_to_next(self)
@@ -62,31 +48,54 @@ local function drive_to_next(self)
   end
 end
 
+--
 -- Lifecycle
 
 function init(self)
   self.speed = 3
   self.route_index = 1
-  self.route = route
+
+  self.route = {
+    { position = vmath.vector3(0, 0.5, 23), stop = true },
+    { position = vmath.vector3(0, 0.5, 6), stop = true },
+    { position = vmath.vector3(0, 2.25, 3), stop = true },
+    { position = vmath.vector3(0, 2.25, -4), stop = true },
+    { position = vmath.vector3(0, 0.5, -7), stop = true },
+    { position = vmath.vector3(0, 0.5, -18), rotation = vmath.vector3(0, -90, 0), stop = true },
+    { position = vmath.vector3(1, 0.5, -18) },
+    { position = vmath.vector3(3, 2.0, -18) },
+    { position = vmath.vector3(16, 2.0, -18), rotation = vmath.vector3(0, -180, 0), stop = true },
+    { position = vmath.vector3(16, 2.0, -11), rotation = vmath.vector3(0, -270, 0), stop = true },
+    { position = vmath.vector3(15, 2.0, -11)},
+    { position = vmath.vector3(13, 0.5, -11)},
+    { position = vmath.vector3(0, 0.5, -11), stop = true },
+    { position = vmath.vector3(-7, 0.5, -11), stop = true },
+    { position = vmath.vector3(-17, 0.5, -11), stop = true },
+    { position = vmath.vector3(-21, 0.5, -11), stop = true },
+    { position = vmath.vector3(-21, -1, -11) },
+    { position = vmath.vector3(0, -1, 25), rotation = vmath.vector3(0, 0, 0), },
+    { position = vmath.vector3(0, 0.5, 25), stop = true },
+    { position = vmath.vector3(0, 0.5, 23), stop = true },
+  }
 end
 
 function update(self, dt)
   if self.operator then
     local position = go.get_position()
-    local ground = physics.raycast(position, position + vmath.vector3(0, -1, 0), { hash 'default' })
+    local ground = physics.raycast(position, position + vmath.vector3(0, -1, 0), { hashes.default })
     local ground_normal = ground and ground.normal or vmath.vector3(0, 1, 0)
 
     -- Tell the operator our ground normal to align camera
-    msg.post(self.operator, hash 'ground_normal', { normal = ground_normal })
+    msg.post(self.operator, hashes.ground_normal, { normal = ground_normal })
   end
 end
 
 function on_message(self, message_id, message)
-  if message_id == hash 'operator_attached' then
+  if message_id == hashes.operator_attached then
     -- Operator is attached so let's drive
     self.operator = message.operator
     drive_to_next(self)
-  elseif message_id == hash 'operator_detached' then
+  elseif message_id == hashes.operator_detached then
     self.operator = nil
   end
 end
