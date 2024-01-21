@@ -1,0 +1,6 @@
+material: "/materials/model.material"
+vertices: "/assets/maps/city/buffer/worldspawn_blockout_black_check.buffer"
+textures: "/assets/textures/blockout/black_check.png"
+primitive_type: PRIMITIVE_TRIANGLES
+position_stream: "position"
+normal_stream: "normal"

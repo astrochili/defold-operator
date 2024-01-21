@@ -470,7 +470,7 @@ collection_instances {
 }
 collection_instances {
   id: "city"
-  collection: "/example/assets/maps/city/city.collection"
+  collection: "/assets/maps/city/city.collection"
   position {
     x: 0.0
     y: 0.0
@@ -621,9 +621,9 @@ embedded_instances {
   data: "embedded_components {\n"
   "  id: \"mesh\"\n"
   "  type: \"mesh\"\n"
-  "  data: \"material: \\\"/example/materials/model.material\\\"\\n"
+  "  data: \"material: \\\"/materials/model.material\\\"\\n"
   "vertices: \\\"/operator/assets/models/box.buffer\\\"\\n"
-  "textures: \\\"/example/assets/textures/blockout/blue_check.png\\\"\\n"
+  "textures: \\\"/assets/textures/blockout/blue_check.png\\\"\\n"
   "primitive_type: PRIMITIVE_TRIANGLES\\n"
   "position_stream: \\\"position\\\"\\n"
   "normal_stream: \\\"normal\\\"\\n"

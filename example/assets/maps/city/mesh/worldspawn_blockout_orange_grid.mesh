@@ -1,6 +1,0 @@
-material: "/example/materials/model.material"
-vertices: "/example/assets/maps/city/buffer/worldspawn_blockout_orange_grid.buffer"
-textures: "/example/assets/textures/blockout/orange_grid.png"
-primitive_type: PRIMITIVE_TRIANGLES
-position_stream: "position"
-normal_stream: "normal"
