@@ -204,31 +204,7 @@ Don't use low values to avoid sharp shakes due to the ground geometry.
 
 Follow the rotation while following the object. Useful when you want to control the object rather than the camera. For example, a car.
 
-## Activation Messages
-
-### activate
-
-Activates the operator. Acquires input and camera focuses, posts `use_camera_projection` to the render. Automatically deactivates a previous operator.
-
-```lua
-msg.post(operator_url, hash 'activate')
-```
-
-### deactivate
-
-Deactivates the operator. Releases input and camera focuses.
-
-```lua
-msg.post(operator_url, hash 'deactivate')
-```
-
-## Follow Messages
-
-The operator can follow the object or follow checkpoints to make kind of cinematic camera movement.
-
-Local space coordinates and rotations are respected so you can switch between two moving objects without problems.
-
-### Checkpoint
+## Checkpoint Properties
 
 There is two ways to create checkpoint:
 
@@ -269,6 +245,30 @@ local point = {
     bezier = true
 }
 ```
+
+## Activation Messages
+
+### activate
+
+Activates the operator. Acquires input and camera focuses, posts `use_camera_projection` to the render. Automatically deactivates a previous operator.
+
+```lua
+msg.post(operator_url, hash 'activate')
+```
+
+### deactivate
+
+Deactivates the operator. Releases input and camera focuses.
+
+```lua
+msg.post(operator_url, hash 'deactivate')
+```
+
+## Follow Messages
+
+The operator can follow the object or follow checkpoints to make kind of cinematic camera movement.
+
+Local space coordinates and rotations are respected so you can switch between two moving objects without problems.
 
 ### follow_sequence
 
