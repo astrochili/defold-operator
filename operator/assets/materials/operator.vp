@@ -10,9 +10,7 @@ attribute mediump vec3 normal;
 attribute mediump vec2 texcoord0;
 
 uniform mediump mat4 mtx_worldview;
-uniform mediump mat4 mtx_view;
 uniform mediump mat4 mtx_proj;
-uniform mediump mat4 mtx_normal;
 
 varying highp vec4 var_position;
 varying mediump vec3 var_normal;

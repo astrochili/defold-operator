@@ -44,7 +44,7 @@ local function drive_to_next(self)
 
   if self.route_index == 16 then
     -- Time to finish a chase
-    msg.post('/scenario', hash 'road_is_over')
+    msg.post('/main', hash 'road_is_over')
   end
 end
 
